@@ -17,7 +17,6 @@
       "Bash(cargo test*)",
       "Bash(cargo tree*)",
       "Bash(cargo clippy*)",
-      {clippyif:clippy}
       "Bash(cargo machete*)",
       "Bash(cargo deny check*)",
       "Bash(cargo audit*)",

@@ -1,0 +1,13 @@
+[build]
+target = "xtensa-esp32s3-none-elf"
+
+[target.xtensa-esp32s3-none-elf]
+runner    = "espflash flash --monitor"
+rustflags = ["-C", "link-arg=-Tlinkall.x"]
+
+[env]
+# Read by esp-println's build script; the filter is baked in at compile time.
+ESP_LOG = "info"
+
+[unstable]
+build-std = ["core", "alloc"]

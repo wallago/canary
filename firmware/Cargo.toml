@@ -1,0 +1,25 @@
+[package]
+name        = "canary"
+description = "Rust firmware turning an ESP32-S3 touch LCD into an always-on desk widget for environment and status info."
+publish     = false
+
+version.workspace      = true
+authors.workspace      = true
+license.workspace      = true
+repository.workspace   = true
+edition.workspace      = true
+rust-version.workspace = true
+
+[dependencies]
+canary-core            = { workspace = true }
+embedded-graphics      = "0.8"
+esp-alloc = { version = "0.10.0", features = ["esp32s3"] }
+esp-backtrace          = { version = "0.19.0", features = ["esp32s3", "panic-handler", "println"] }
+esp-bootloader-esp-idf = { version = "0.5.0", features = ["esp32s3"] }
+esp-hal                = { version = "1.1.2", features = ["esp32s3", "unstable"] }
+esp-println            = { version = "0.17.0", features = ["esp32s3", "log-04"] }
+log                    = "0.4"
+st77916 = "0.1.1"
+
+[lints]
+workspace = true

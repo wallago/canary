@@ -8,6 +8,8 @@
       url = "github:sadjow/claude-code-nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    esp-rs-nix.url = "github:leighleighleigh/esp-rs-nix";
+    nixpkgs-esp-dev.url = "github:mirrexagon/nixpkgs-esp-dev";
   };
 
   outputs =
@@ -18,6 +20,8 @@
       rust-overlay,
       naersk,
       claude-code,
+      esp-rs-nix,
+      nixpkgs-esp-dev,
       ...
     }:
     # ── System-agnostic outputs (modules) live out here ──
@@ -37,10 +41,10 @@
           let
             overlays = [ (import rust-overlay) ];
             pkgs = import nixpkgs {
-              inherit 
-                system 
+              inherit
+                system
                 overlays
-              ;
+                ;
               config.allowUnfree = true;
             };
 
@@ -69,8 +73,12 @@
                 src = ./.;
               };
 
-            # ── Claude Settings ─────────────────────────────────────
+            # ── Claude Settings ──────────────────────────────────────
             claude = claude-code.packages.${system}.default;
+
+            # ── ESP ──────────────────────────────────────────────────
+            esp-dev = nixpkgs-esp-dev.packages.${system}.esp-idf-full;
+            esp-rs = esp-rs-nix.packages.${system}.esp-rs;
 
             # ── Tooling shared by the dev shell and CI ───────────────
             ciTools = with pkgs; [
@@ -93,7 +101,10 @@
               statix
               deadnix
 
-              # crate deps
+              # ESP
+              esp-dev
+              esp-rs
+              espflash
             ];
           in
           {
@@ -117,6 +128,9 @@
                   claude
                   nodejs
                 ]);
+              shellHook = ''
+                export PATH="${esp-rs}/bin:$PATH"
+              '';
             };
 
             # ── CI Shell (nix develop .#ci) ──────────────────────────

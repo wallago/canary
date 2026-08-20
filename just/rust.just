@@ -1,25 +1,26 @@
-# Run the app. Usage: just run -- statement.csv bagels.db
+# Flash the firmware to a connected board and open the monitor
 [group('dev')]
 run *ARGS:
-    cargo run -- --config config.toml {{ ARGS }}
+    cd firmware && cargo run {{ ARGS }}
 
-# Build the optimized release binary
+# Build the optimized release firmware
 [group('dev')]
 build:
-    cargo build --release
+    cd firmware && cargo build --release
 
-# Type-check the whole workspace (fast feedback, no binary)
+# Type-check both crates (fast feedback, no binary)
 [group('dev')]
 check:
-    cargo check --all-targets
+    cargo check -p canary-core --all-targets
+    cd firmware && cargo check --all-targets
 
 # Format Rust + Nix sources in place
 [group('dev')]
 fmt:
-    cargo fmt
+    cargo fmt --all
     nixfmt flake.nix package.nix module.nix
 
-# Run the test suite. Usage: just test [pattern]
+# Run the host test suite. Usage: just test [pattern]
 [group('dev')]
 test *ARGS:
-    cargo nextest run {{ ARGS }}
+    cargo nextest run -p canary-core {{ ARGS }}

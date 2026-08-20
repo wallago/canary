@@ -10,13 +10,15 @@ act_flags := '-W .github/workflows/ci.yml -P ubuntu-latest=catthehacker/ubuntu:f
 [group('ci')]
 ci-light:
     @echo "▶ format"
-    cargo fmt --check
-    @echo "▶ clippy"
-    cargo clippy --all-targets -- -D warnings
+    cargo fmt --check --all
+    @echo "▶ clippy (core)"
+    cargo clippy -p canary-core --all-targets -- -D warnings
+    @echo "▶ clippy (firmware)"
+    cd firmware && cargo clippy --all-targets -- -D warnings
     @echo "▶ test"
-    cargo nextest run
+    cargo nextest run -p canary-core
     @echo "▶ doc"
-    RUSTDOCFLAGS="-D warnings" cargo doc --no-deps --all-features
+    RUSTDOCFLAGS="-D warnings" cargo doc -p canary-core --no-deps --all-features
     @echo "▶ typos"
     typos
     @echo "▶ unused deps"
