@@ -7,7 +7,8 @@ rustflags = ["-C", "link-arg=-Tlinkall.x"]
 
 [env]
 # Read by esp-println's build script; the filter is baked in at compile time.
-ESP_LOG = "info"
+ESP_LOG = "debug"
+# ESP_LOG = "info"
 
 [unstable]
 build-std = ["core", "alloc"]

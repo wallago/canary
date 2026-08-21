@@ -22,6 +22,13 @@ pub(crate) struct QspiInterface<'d> {
 }
 
 impl<'d> QspiInterface<'d> {
+    pub(crate) fn new(bus: SpiDmaBus<'d, Blocking>) -> Self {
+        Self {
+            bus,
+            pixel_started: false,
+        }
+    }
+
     /// QSPI register write: opcode 0x02, single-line address + data.
     fn reg_write(&mut self, cmd: u8, data: &[u8]) -> Result<(), Error> {
         self.bus.half_duplex_write(

@@ -22,6 +22,9 @@ mod app;
 /// Screen hardware communication.
 mod display;
 
+/// UART sensor link.
+mod sensor;
+
 /// Board hardware config.
 mod board;
 
@@ -55,10 +58,13 @@ fn main() -> ! {
 
     info!("{} booting", canary_core::version!());
 
+    /// Initialized display.
     let mut board = match board::init_panel(peripherals) {
         Ok(board) => board,
         Err(e) => panic!("board init failed: {e}"),
     };
+
+    /// Display simple Hello.
     canary_core::ui::hello(&mut board.display).unwrap_or_else(|e| panic!("draw: {e:?}"));
 
     // Busy-waits on the cycle counter rather than sleeping: it needs no
@@ -68,7 +74,9 @@ fn main() -> ! {
     // The "and now, forever" part. Every terminal path in a firmware binary
     // ends in a loop like this one, a reset, or a panic.
     loop {
-        info!("tick");
+        if let Err(e) = board.sensor.log_pending() {
+            info!("sensor read error: {e:?}");
+        }
         delay.delay_millis(1_000);
     }
 }

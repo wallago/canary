@@ -12,14 +12,24 @@ use esp_hal::{
         master::{Config as SpiConfig, Spi},
     },
     time::Rate,
+    uart::{Config as UartConfig, Uart},
 };
 
-use crate::display::{self, PanelDisplay};
+use crate::{
+    display::{self, PanelDisplay},
+    sensor::Sensor,
+};
+
+/// Sensor link speed. Must match the sensor exactly — a mismatched rate still
+/// delivers bytes, just wrong ones.
+const SENSOR_BAUD: u32 = 115_200;
+// const SENSOR_BAUD: u32 = 9600;
 
 /// Everything board bring-up produces.
 pub(crate) struct Board {
     pub display: PanelDisplay<'static>,
     pub backlight: Output<'static>,
+    pub sensor: Sensor<'static>,
 }
 
 /// Wire up the buses and bring the panel to a drawable state.
@@ -75,5 +85,17 @@ pub(crate) fn init_panel(peripherals: Peripherals) -> Result<Board> {
         .clear(Rgb565::RED)
         .map_err(|_| Error::Display("clear failed"))?;
 
-    Ok(Board { display, backlight })
+    // The sensor's UART.
+    let uart = Uart::new(
+        peripherals.UART1,
+        UartConfig::default().with_baudrate(SENSOR_BAUD),
+    )
+    .map_err(|_| Error::Bus("uart1"))?
+    .with_rx(peripherals.GPIO43);
+
+    Ok(Board {
+        display,
+        backlight,
+        sensor: Sensor::new(uart),
+    })
 }

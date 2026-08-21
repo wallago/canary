@@ -212,17 +212,12 @@ pub(crate) fn build<'d>(
     i2c: I2c<'d, Blocking>,
     delay: &mut Delay,
 ) -> DriverResult<PanelDisplay<'d>, QspiInterface<'d>, TcaReset<'d>> {
-    let interface = QspiInterface {
-        bus,
-        pixel_started: false,
-    };
-    let reset = TcaReset {
-        i2c,
-        delay: Delay::new(),
-    };
-
-    St77916::builder(interface, reset, DisplaySize::new(360, 360))
-        .with_init_commands(PANEL_INIT)
-        .unbuffered::<Rgb565>()
-        .build(ColorMode::Rgb565, delay)
+    St77916::builder(
+        QspiInterface::new(bus),
+        TcaReset::new(i2c),
+        DisplaySize::new(360, 360),
+    )
+    .with_init_commands(PANEL_INIT)
+    .unbuffered::<Rgb565>()
+    .build(ColorMode::Rgb565, delay)
 }

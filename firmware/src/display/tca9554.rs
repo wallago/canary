@@ -20,6 +20,13 @@ pub(crate) struct TcaReset<'d> {
 }
 
 impl<'d> TcaReset<'d> {
+    pub(crate) fn new(i2c: I2c<'d, Blocking>) -> Self {
+        Self {
+            i2c,
+            delay: Delay::new(),
+        }
+    }
+
     /// Set or clear EXIO2 on the expander's OUTPUT register without disturbing
     /// the other pins.
     fn set_reset(&mut self, level: bool) -> Result<(), Error> {
