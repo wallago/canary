@@ -14,10 +14,10 @@ use esp_hal::{
     time::Rate,
 };
 
-use crate::screen::{self, PanelDisplay};
+use crate::display::{self, PanelDisplay};
 
 /// Everything board bring-up produces.
-pub struct Board {
+pub(crate) struct Board {
     pub display: PanelDisplay<'static>,
     pub backlight: Output<'static>,
 }
@@ -66,7 +66,7 @@ pub(crate) fn init_panel(peripherals: Peripherals) -> Result<Board> {
     // Hands both buses to the driver, which pulses reset over I2C, runs the
     // ~150-entry init table, and leaves the controller awake with the display
     // on. After this returns, the value is a `DrawTarget`.
-    let mut display = screen::build(bus, i2c, &mut delay).map_err(|_| Error::Panel)?;
+    let mut display = display::build(bus, i2c, &mut delay).map_err(|_| Error::Panel)?;
 
     // First light. If the panel goes red, then the backlight, both buses, the
     // reset over I2C and the init table are all working, and anything that

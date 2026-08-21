@@ -16,7 +16,7 @@ use st77916::{
 const PIXEL_CHUNK: usize = 4096;
 
 /// QSPI transport implementing the driver's [`ControllerInterface`].
-pub struct QspiInterface<'d> {
+pub(crate) struct QspiInterface<'d> {
     pub bus: SpiDmaBus<'d, Blocking>,
     pub pixel_started: bool,
 }

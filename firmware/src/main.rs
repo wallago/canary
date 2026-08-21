@@ -20,16 +20,10 @@ use log::info;
 mod app;
 
 /// Screen hardware communication.
-mod screen;
+mod display;
 
 /// Board hardware config.
 mod board;
-
-/// QSPI protocol layer.
-mod qspi;
-
-/// TSA tbd.
-mod tsa;
 
 // Emits a metadata struct into the `.flash.appdesc` section: image version,
 // project name, build date, the IDF version this was built against. The

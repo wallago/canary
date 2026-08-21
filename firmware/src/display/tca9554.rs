@@ -14,7 +14,7 @@ const TCA9554_CONFIG_REG: u8 = 0x03;
 const EXIO_LCD_RST_BIT: u8 = 1 << 1;
 
 /// Panel reset over the TCA9554 expander, implementing [`ResetInterface`].
-pub struct TcaReset<'d> {
+pub(crate) struct TcaReset<'d> {
     pub i2c: I2c<'d, Blocking>,
     pub delay: Delay,
 }
