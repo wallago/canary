@@ -21,6 +21,12 @@ pub enum Error {
     /// The panel did not come up: reset or the init sequence failed.
     #[error("Panel error")]
     Panel,
+    /// The UART reported a framing, parity, or overflow error.
+    #[error("Uart RX error: `{0}`")]
+    UartRx(&'static str),
+    /// The command could not be pushed out of the TX FIFO.
+    #[error("Uart TX error: `{0}`")]
+    UartTx(&'static str),
 }
 
 /// Type alias for the standard [`Result`] type.

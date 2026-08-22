@@ -12,7 +12,7 @@ use esp_hal::{
         master::{Config as SpiConfig, Spi},
     },
     time::Rate,
-    uart::{Config as UartConfig, Uart},
+    uart::{Config as UartConfig, DataBits, Parity, StopBits, Uart},
 };
 
 use crate::{
@@ -22,8 +22,7 @@ use crate::{
 
 /// Sensor link speed. Must match the sensor exactly — a mismatched rate still
 /// delivers bytes, just wrong ones.
-const SENSOR_BAUD: u32 = 115_200;
-// const SENSOR_BAUD: u32 = 9600;
+const SENSOR_BAUD: u32 = 9600;
 
 /// Everything board bring-up produces.
 pub(crate) struct Board {
@@ -88,10 +87,15 @@ pub(crate) fn init_panel(peripherals: Peripherals) -> Result<Board> {
     // The sensor's UART.
     let uart = Uart::new(
         peripherals.UART1,
-        UartConfig::default().with_baudrate(SENSOR_BAUD),
+        UartConfig::default()
+            .with_baudrate(SENSOR_BAUD)
+            .with_data_bits(DataBits::_8)
+            .with_parity(Parity::None)
+            .with_stop_bits(StopBits::_1),
     )
-    .map_err(|_| Error::Bus("uart1"))?
-    .with_rx(peripherals.GPIO43);
+    .map_err(|_| Error::Bus("uart"))?
+    .with_tx(peripherals.GPIO43)
+    .with_rx(peripherals.GPIO44);
 
     Ok(Board {
         display,

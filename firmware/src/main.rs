@@ -28,6 +28,12 @@ mod sensor;
 /// Board hardware config.
 mod board;
 
+/// Bring-up only: identify which GPIO a connector pin reaches.
+mod pinfind;
+
+/// Run the GPIO scan instead of the widget. Bring-up only.
+const PIN_SCAN: bool = false;
+
 // Emits a metadata struct into the `.flash.appdesc` section: image version,
 // project name, build date, the IDF version this was built against. The
 // second-stage bootloader reads it to identify and validate the app before
@@ -56,6 +62,10 @@ fn main() -> ! {
     // handed out exactly once.
     let peripherals = esp_hal::init(config);
 
+    if PIN_SCAN {
+        pinfind::run(peripherals);
+    }
+
     info!("{} booting", canary_core::version!());
 
     /// Initialized display.
@@ -71,12 +81,15 @@ fn main() -> ! {
     // scheduler and no interrupts, so it works this early in boot.
     let delay = Delay::new();
 
-    // The "and now, forever" part. Every terminal path in a firmware binary
-    // ends in a loop like this one, a reset, or a panic.
+    // The sensor answers a query rather than streaming, so the byte goes out
+    // once per reading. The settle gives the reply time to land in the RX FIFO
+    // before `read_buffered` looks — that call returns whatever is there now
+    // and never waits.
     loop {
-        if let Err(e) = board.sensor.log_pending() {
-            info!("sensor read error: {e:?}");
+        if let Err(e) = board.sensor.poll() {
+            info!("sensor: {e:?}");
         }
+
         delay.delay_millis(1_000);
     }
 }
