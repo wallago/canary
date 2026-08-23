@@ -6,25 +6,19 @@ use esp_hal::{
 };
 use log::{debug, info};
 
-/// Query current concentrations: the command byte `0x70` followed by its
-/// 0-add8 checksum. The sensor discards any frame whose checksum does not
-/// match, which is why a bare `0x70` never gets a reply.
+/// Query current concentrations.
 const GET_CONC: [u8; 2] = [0x70, 0x90];
 
-/// Length of the `GET_CONC` reply: header, four gas readings, two environment
-/// readings, checksum. Logged raw for now, not decoded.
+/// Length of the reply.
 const FRAME_LEN: usize = 22;
 
-/// How long to wait for a reply. The 22 bytes take about 23 ms on the wire at
-/// 9600 baud; the rest is the sensor's own turnaround.
+/// How long to wait for a reply.
 const REPLY_TIMEOUT_MS: u32 = 200;
 
 /// How often to check the RX FIFO while waiting for a reply.
 const POLL_MS: u32 = 5;
 
-/// `canary_core` knows nothing about esp-hal, so the concrete `RxError` has to
-/// collapse to a static label on the way out. The variant is worth keeping:
-/// framing and parity point at the wiring, an overflow at us.
+/// Parsing `RxError` to `Error`.
 fn rx_error(e: RxError) -> Error {
     Error::UartRx(match e {
         RxError::FifoOverflowed => "fifo overflowed",
@@ -52,8 +46,7 @@ impl<'d> Sensor<'d> {
         }
     }
 
-    /// Send the query and log whatever comes back, raw. A short frame is
-    /// logged as-is — during bring-up a partial reply is worth seeing.
+    /// Send the query and log whatever comes back, raw.
     pub(crate) fn poll(&mut self) -> Result<()> {
         self.drain()?;
         self.request()?;
@@ -62,9 +55,9 @@ impl<'d> Sensor<'d> {
         let n = self.read_frame(&mut frame)?;
 
         if n == 0 {
-            info!("sensor: no reply");
+            debug!("sensor: no reply");
         } else if n < FRAME_LEN {
-            info!(
+            debug!(
                 "sensor: short reply, {n} of {FRAME_LEN} bytes {:02X?}",
                 &frame[..n]
             );
@@ -75,11 +68,11 @@ impl<'d> Sensor<'d> {
         Ok(())
     }
 
-    /// Drop anything left from an earlier exchange, so a stale byte cannot be
-    /// mistaken for the head of this reply.
+    /// Drop anything left from an earlier exchange.
     fn drain(&mut self) -> Result<()> {
         let mut scratch = [0u8; FRAME_LEN];
 
+        // Read it as keep calling read_buffered until it reports zero.
         while self.uart.read_buffered(&mut scratch).map_err(rx_error)? > 0 {}
 
         Ok(())
@@ -101,18 +94,20 @@ impl<'d> Sensor<'d> {
         Ok(())
     }
 
-    /// Fill `frame`, or return however many bytes arrived before the deadline.
-    /// `read_buffered` never blocks, so the pacing is ours to do.
+    /// Read frame, fill result and return its this.
     fn read_frame(&mut self, frame: &mut [u8; FRAME_LEN]) -> Result<usize> {
         let mut have = 0;
         let mut waited = 0;
 
+        // Do it until expected lenght as been reach
         while have < FRAME_LEN {
+            // Fill frame content and get frame lenght.
             let n = self
                 .uart
                 .read_buffered(&mut frame[have..])
                 .map_err(rx_error)?;
 
+            // Wait a bit for next frame.
             if n == 0 {
                 if waited >= REPLY_TIMEOUT_MS {
                     break;
@@ -122,6 +117,7 @@ impl<'d> Sensor<'d> {
                 continue;
             }
 
+            // Add frames to reach the expected lenght.
             have += n;
         }
 
