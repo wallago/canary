@@ -1,4 +1,7 @@
-use canary_core::error::{Error, Result};
+use canary_core::{
+    data::temp::Temp,
+    error::{Error, Result},
+};
 use esp_hal::{
     Blocking,
     delay::Delay,
@@ -29,6 +32,31 @@ fn rx_error(e: RxError) -> Error {
     })
 }
 
+/// Offsets into the reply. The frame is a header, four big-endian `f32`s, two
+/// big-endian `u16`s, then a checksum — 1 + 16 + 4 + 1 = 22 bytes.
+mod offset {
+    /// Temperature, hundredths of a degree Celsius, big-endian `u16`.
+    ///
+    /// Confirmed by frame length and checksum; the *meaning* of this field is
+    /// still the reading that best fits observed values, so if a warmed sensor
+    /// moves a different field, this constant is the only thing to change.
+    pub(super) const TEMP_C_X100: usize = 17;
+
+    /// The trailing checksum byte.
+    pub(super) const CHECKSUM: usize = 21;
+}
+
+/// Verify the trailing checksum: the sum of every preceding byte, including
+/// the header, negated. Confirmed against both a datasheet frame and a live
+/// capture.
+fn checksum_ok(frame: &[u8; FRAME_LEN]) -> bool {
+    let sum = frame[..offset::CHECKSUM]
+        .iter()
+        .fold(0_u8, |acc, &byte| acc.wrapping_add(byte));
+
+    sum.wrapping_neg() == frame[offset::CHECKSUM]
+}
+
 /// The sensor's serial link.
 pub(crate) struct Sensor<'d> {
     /// The UART the sensor hangs off.
@@ -46,8 +74,11 @@ impl<'d> Sensor<'d> {
         }
     }
 
-    /// Send the query and log whatever comes back, raw.
-    pub(crate) fn poll(&mut self) -> Result<()> {
+    /// Send the query and return the temperature it reports.
+    ///
+    /// `Ok(None)` covers the ordinary misses — no reply, a short reply, a bad
+    /// checksum — since none of those are worth stopping the widget over.
+    pub(crate) fn poll(&mut self) -> Result<Option<Temp>> {
         self.drain()?;
         self.request()?;
 
@@ -56,16 +87,28 @@ impl<'d> Sensor<'d> {
 
         if n == 0 {
             debug!("sensor: no reply");
-        } else if n < FRAME_LEN {
+            return Ok(None);
+        }
+
+        if n < FRAME_LEN {
             debug!(
                 "sensor: short reply, {n} of {FRAME_LEN} bytes {:02X?}",
                 &frame[..n]
             );
-        } else {
-            info!("sensor: {:02X?}", &frame[..n]);
+            return Ok(None);
         }
 
-        Ok(())
+        if !checksum_ok(&frame) {
+            debug!("sensor: bad checksum {frame:02X?}");
+            return Ok(None);
+        }
+
+        let raw = u16::from_be_bytes([frame[offset::TEMP_C_X100], frame[offset::TEMP_C_X100 + 1]]);
+        let celsius = f32::from(raw) / 100.0;
+
+        info!("sensor: {celsius:.2}C from {frame:02X?}");
+
+        Ok(Some(Temp::new(celsius)))
     }
 
     /// Drop anything left from an earlier exchange.
@@ -99,7 +142,7 @@ impl<'d> Sensor<'d> {
         let mut have = 0;
         let mut waited = 0;
 
-        // Do it until expected lenght as been reach
+        // Do it until expected lenght as been reach.
         while have < FRAME_LEN {
             // Fill frame content and get frame lenght.
             let n = self
