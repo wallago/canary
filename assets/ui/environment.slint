@@ -1,0 +1,93 @@
+import { Theme } from "theme.slint";
+import { Header } from "header.slint";
+import { Temperature } from "temperature.slint";
+import { Humidity } from "humidity.slint";
+import { IAQ } from "iaq.slint";
+import { Gaz } from "gaz.slint";
+
+export component EnvironmentDisplay inherits Window {
+    width: 360px;
+    height: 360px;
+
+    default-font-family: "Inter";
+    background: Theme.background-color;
+
+    // ─────────────────────────────────────────────
+    // Values
+    // ─────────────────────────────────────────────
+
+    in property <float> temperature: 23.7;
+    in property <float> humidity: 48.0;
+    in property <float> co: 0.0;
+    in property <float> hcho: 0.0;
+    in property <float> tvoc: 0.0;
+    in property <string> iaq: "hazardous";
+
+    in property <string> sensor-status: "X6 CONNECTED";
+
+    // ═════════════════════════════════════════════
+    // Outer display ring
+    // ═════════════════════════════════════════════
+
+    Rectangle {
+        x: 0px;
+        y: 0px;
+        width: 360px;
+        height: 360px;
+
+        border-radius: 180px;
+        background: transparent;
+
+        border-width: 3px;
+        border-color: #2d3035;
+    }
+
+    Header {
+        x: 0px;
+        y: 0px;
+
+        status: sensor-status;
+    }
+
+    Temperature {
+        x: 170px;
+        y: 119px;
+
+        height: 58px;
+        width: 200px;
+
+        temperature: root.temperature;
+    }
+
+    Humidity {
+        x: 170px;
+        y: 200px;
+
+        height: 58px;
+        width: 200px;
+
+        humidity: root.humidity;
+    }
+
+    Gaz {
+        x: 0px;
+        y: 127px;
+
+        height: 121px;
+        width: 174px;
+
+        co: root.co;
+        hcho: root.hcho;
+        tvoc: root.tvoc;
+    }
+
+    IAQ {
+        x: 0px;
+        y: 278px;
+
+        height: 58px;
+        width: parent.width;
+
+        iaq: root.iaq;
+    }
+}

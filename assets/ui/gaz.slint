@@ -1,0 +1,122 @@
+import { Theme } from "theme.slint";
+
+export component Gaz {
+    in property <float> co;
+    in property <float> hcho;
+    in property <float> tvoc;
+
+    property <length> icon-size: 46px;
+    property <length> icon-gap: 8px;
+    property <length> unit-gap: 4px;
+
+    Image {
+        x: 14px;
+        y: 39px;
+        width: icon-size;
+        height: icon-size;
+
+        source: @image-url("../icons/Gaz.png");
+    }
+
+    Text {
+        x: 68px;
+        y: 0px;
+
+        text: co.to-fixed(2);
+        color: Theme.text-main;
+        font-size: 32px;
+        font-weight: 700;
+
+        horizontal-alignment: left;
+    }
+
+    Text {
+        x: 142px;
+        y: 5px;
+
+        text: "ppm";
+
+        color: Theme.text-main;
+        font-size: 12px;
+        font-weight: 500;
+    }
+
+    Text {
+        x: 142px;
+        y: 20px;
+
+        text: "co";
+
+        color: Theme.text-secondary;
+        font-size: 12px;
+        font-weight: 500;
+    }
+
+    Text {
+        x: 68px;
+        y: 43px;
+
+        text: round(hcho * 1000);
+        color: Theme.text-main;
+        font-size: 32px;
+        font-weight: 700;
+
+        horizontal-alignment: left;
+    }
+
+    Text {
+        x: 115px;
+        y: 48px;
+
+        text: "ppb";
+
+        color: Theme.text-main;
+        font-size: 12px;
+        font-weight: 500;
+    }
+
+    Text {
+        x: 115px;
+        y: 63px;
+
+        text: "hcho";
+
+        color: Theme.text-secondary;
+        font-size: 12px;
+        font-weight: 500;
+    }
+
+    Text {
+        x: 68px;
+        y: 82px;
+
+        text: round(tvoc * 1000);
+        color: Theme.text-main;
+        font-size: 32px;
+        font-weight: 700;
+
+        horizontal-alignment: left;
+    }
+
+    Text {
+        x: 115px;
+        y: 87px;
+
+        text: "ppb";
+
+        color: Theme.text-main;
+        font-size: 12px;
+        font-weight: 500;
+    }
+
+    Text {
+        x: 115px;
+        y: 102px;
+
+        text: "tvoc";
+
+        color: Theme.text-secondary;
+        font-size: 12px;
+        font-weight: 500;
+    }
+}

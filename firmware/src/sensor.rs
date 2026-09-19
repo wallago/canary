@@ -1,5 +1,5 @@
 use canary_core::{
-    data::temp::Temp,
+    data::{co::CO, hcho::HCHO, humidity::Humidity, iaq::IAQ, temp::Temp, tvoc::TVOC},
     error::{Error, Result},
 };
 use esp_hal::{
@@ -32,17 +32,13 @@ fn rx_error(e: RxError) -> Error {
     })
 }
 
-/// Offsets into the reply. The frame is a header, four big-endian `f32`s, two
-/// big-endian `u16`s, then a checksum — 1 + 16 + 4 + 1 = 22 bytes.
 mod offset {
-    /// Temperature, hundredths of a degree Celsius, big-endian `u16`.
-    ///
-    /// Confirmed by frame length and checksum; the *meaning* of this field is
-    /// still the reading that best fits observed values, so if a warmed sensor
-    /// moves a different field, this constant is the only thing to change.
-    pub(super) const TEMP_C_X100: usize = 17;
-
-    /// The trailing checksum byte.
+    pub(super) const IAQ: usize = 1;
+    pub(super) const TVOC: usize = 5;
+    pub(super) const HCHO: usize = 9;
+    pub(super) const CO: usize = 13;
+    pub(super) const TEMP: usize = 17;
+    pub(super) const HUM: usize = 19;
     pub(super) const CHECKSUM: usize = 21;
 }
 
@@ -55,6 +51,14 @@ fn checksum_ok(frame: &[u8; FRAME_LEN]) -> bool {
         .fold(0_u8, |acc, &byte| acc.wrapping_add(byte));
 
     sum.wrapping_neg() == frame[offset::CHECKSUM]
+}
+
+fn float_at(frame: &[u8; FRAME_LEN], at: usize) -> f32 {
+    f32::from_be_bytes([frame[at], frame[at + 1], frame[at + 2], frame[at + 3]])
+}
+
+fn hundredths_at(frame: &[u8; FRAME_LEN], at: usize) -> f32 {
+    f32::from(u16::from_be_bytes([frame[at], frame[at + 1]])) / 100.0
 }
 
 /// The sensor's serial link.
@@ -78,7 +82,9 @@ impl<'d> Sensor<'d> {
     ///
     /// `Ok(None)` covers the ordinary misses — no reply, a short reply, a bad
     /// checksum — since none of those are worth stopping the widget over.
-    pub(crate) fn poll(&mut self) -> Result<Option<Temp>> {
+    pub(crate) fn poll(
+        &mut self,
+    ) -> Result<Option<(Temp, Humidity, CO, HCHO, TVOC, IAQ<'static>)>> {
         self.drain()?;
         self.request()?;
 
@@ -103,12 +109,35 @@ impl<'d> Sensor<'d> {
             return Ok(None);
         }
 
-        let raw = u16::from_be_bytes([frame[offset::TEMP_C_X100], frame[offset::TEMP_C_X100 + 1]]);
-        let celsius = f32::from(raw) / 100.0;
+        let raw_iaq = float_at(&frame, offset::IAQ);
+        let iaq = if raw_iaq <= 50.0 {
+            "good"
+        } else if raw_iaq > 50.0 && raw_iaq <= 100.0 {
+            "moderate"
+        } else if raw_iaq > 100.0 && raw_iaq <= 300.0 {
+            "unhealthy"
+        } else {
+            "hazardous"
+        };
+        let tvoc = float_at(&frame, offset::TVOC);
+        let hcho = float_at(&frame, offset::HCHO);
+        let co = float_at(&frame, offset::CO);
 
-        info!("sensor: {celsius:.2}C from {frame:02X?}");
+        let celsius = hundredths_at(&frame, offset::TEMP);
+        let humidity = hundredths_at(&frame, offset::HUM);
 
-        Ok(Some(Temp::new(celsius)))
+        debug!(
+            "\nTemp: {celsius:.2}\nHum: {humidity}\nCO: {co}\nHCHO: {hcho}\nTVOC: {tvoc}\nIAQ: {iaq}"
+        );
+
+        Ok(Some((
+            Temp::new(celsius),
+            Humidity::new(humidity),
+            CO::new(co),
+            HCHO::new(hcho),
+            TVOC::new(tvoc),
+            IAQ::new(iaq),
+        )))
     }
 
     /// Drop anything left from an earlier exchange.

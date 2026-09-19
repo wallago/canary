@@ -1,7 +1,12 @@
 //! The widget: bring the board up, then keep the Slint screen in step with
 //! the sensor.
 
-use canary_core::{data::temp::Temp, prelude::*};
+use alloc::string::ToString;
+
+use canary_core::{
+    data::{co::CO, hcho::HCHO, humidity::Humidity, iaq::IAQ, temp::Temp, tvoc::TVOC},
+    prelude::*,
+};
 use esp_hal::{
     delay::Delay,
     peripherals::Peripherals,
@@ -47,7 +52,17 @@ fn widget(peripherals: Peripherals, delay: Delay) -> Result<()> {
     screen.show().map_err(|_| Error::Init("slint show"))?;
 
     let mut temp = Temp::default();
+    let mut hum = Humidity::default();
+    let mut co = CO::default();
+    let mut hcho = HCHO::default();
+    let mut tvoc = TVOC::default();
+    let mut iaq = IAQ::default();
     screen.set_temperature(temp.value());
+    screen.set_humidity(hum.value());
+    screen.set_iaq(iaq.value().into());
+    screen.set_co(co.value().into());
+    screen.set_tvoc(tvoc.value().into());
+    screen.set_hcho(hcho.value().into());
 
     // `None` until the first query, so the first pass polls straight away
     // rather than subtracting the interval off a clock that has barely started.
@@ -62,10 +77,30 @@ fn widget(peripherals: Peripherals, delay: Delay) -> Result<()> {
             match board.sensor.poll() {
                 // Setting the property is what schedules a repaint; Slint
                 // works out which lines changed and redraws only those.
-                Ok(Some(fresh)) => {
-                    if fresh != temp {
-                        temp = fresh;
+                Ok(Some((new_temp, new_hum, new_co, new_hcho, new_tvoc, new_iaq))) => {
+                    if new_temp != temp {
+                        temp = new_temp;
                         screen.set_temperature(temp.value());
+                    }
+                    if new_hum != hum {
+                        hum = new_hum;
+                        screen.set_humidity(hum.value());
+                    }
+                    if new_iaq != iaq {
+                        iaq = new_iaq;
+                        screen.set_iaq(iaq.value().into());
+                    }
+                    if new_co != co {
+                        co = new_co;
+                        screen.set_co(co.value());
+                    }
+                    if new_hcho != hcho {
+                        hcho = new_hcho;
+                        screen.set_hcho(hcho.value());
+                    }
+                    if new_tvoc != tvoc {
+                        tvoc = new_tvoc;
+                        screen.set_tvoc(tvoc.value());
                     }
                 }
                 // A miss leaves the last good value on screen.
