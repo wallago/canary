@@ -7,6 +7,7 @@ use esp_hal::{
     gpio::{Level, Output, OutputConfig},
     i2c::master::{Config as I2cConfig, I2c},
     peripherals::Peripherals,
+    psram::{Psram, PsramConfig},
     spi::{
         Mode,
         master::{Config as SpiConfig, Spi},
@@ -14,6 +15,7 @@ use esp_hal::{
     time::Rate,
     uart::{Config as UartConfig, DataBits, Parity, StopBits, Uart},
 };
+use log::info;
 
 use crate::{
     display::{self, PanelDisplay},
@@ -29,10 +31,23 @@ pub(crate) struct Board {
     pub display: PanelDisplay<'static>,
     pub backlight: Output<'static>,
     pub sensor: Sensor<'static>,
+    /// Holds the external RAM mapping open; the framebuffer points into it.
+    pub psram: Psram,
 }
 
 /// Wire up the buses and bring the panel to a drawable state.
 pub(crate) fn init_panel(peripherals: Peripherals) -> Result<Board> {
+    // Slint needs a full 360x360 RGB565 framebuffer to draw arcs and curves —
+    // 253 KiB, more than internal SRAM can spare next to the heap and the DMA
+    // buffers. `Auto` probes both the interface mode and the size; a board
+    // with no PSRAM fitted reports zero bytes rather than failing to boot.
+    let psram = Psram::new(peripherals.PSRAM, PsramConfig::default());
+    let (psram_ptr, psram_len) = psram.raw_parts();
+    info!("psram: {} KiB at {psram_ptr:p}", psram_len / 1024);
+    if psram_len == 0 {
+        return Err(Error::Init("no psram"));
+    }
+
     let backlight = Output::new(peripherals.GPIO5, Level::High, OutputConfig::default());
 
     let mut delay = Delay::new();
@@ -101,5 +116,6 @@ pub(crate) fn init_panel(peripherals: Peripherals) -> Result<Board> {
         display,
         backlight,
         sensor: Sensor::new(uart),
+        psram,
     })
 }

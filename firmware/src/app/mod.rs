@@ -1,8 +1,6 @@
 //! The widget: bring the board up, then keep the Slint screen in step with
 //! the sensor.
 
-use alloc::vec;
-
 use canary_core::{data::temp::Temp, prelude::*};
 use esp_hal::{
     delay::Delay,
@@ -10,9 +8,9 @@ use esp_hal::{
     time::{Duration, Instant},
 };
 use log::{error, info};
-use slint::{ComponentHandle, platform::software_renderer::Rgb565Pixel};
+use slint::ComponentHandle;
 
-use crate::{display, ui};
+use crate::ui;
 
 /// How long to leave between sensor queries.
 const POLL_INTERVAL: Duration = Duration::from_millis(1_000);
@@ -43,13 +41,10 @@ fn widget(peripherals: Peripherals, delay: Delay) -> Result<()> {
     let mut board = crate::board::init_panel(peripherals)?;
 
     let window = ui::init()?;
+    let frame = ui::frame_buffer(&board.psram)?;
     let screen =
         ui::generated::EnvironmentDisplay::new().map_err(|_| Error::Init("slint screen"))?;
     screen.show().map_err(|_| Error::Init("slint show"))?;
-
-    // One full panel row, reused for every line of every frame. Slint renders
-    // into the dirty span of it and hands the span straight to the driver.
-    let mut line = vec![Rgb565Pixel::default(); usize::from(display::WIDTH)];
 
     let mut temp = Temp::default();
     screen.set_temperature(temp.value());
@@ -79,7 +74,7 @@ fn widget(peripherals: Peripherals, delay: Delay) -> Result<()> {
             }
         }
 
-        ui::render(&window, &mut board.display, &mut line)
+        ui::render(&window, &mut board.display, frame)
             .map_err(|_| Error::Display("render failed"))?;
 
         // Animations need frames; otherwise there is nothing to do until the

@@ -3,6 +3,78 @@ import "fonts/Inter-Medium.ttf";
 import "fonts/Inter-SemiBold.ttf";
 import "fonts/Inter-Bold.ttf";
 
+// A gauge arc, not a full circle: fixed span of 260°, gap centered at 6
+// o'clock, matching the reference design. Two layers:
+//
+// 1. A pre-baked image (see bake_rings2.py) — the arc already cropped to
+//    [start-deg, start-deg + span-deg], gradient-colored as if fully read.
+//    Gradient brushes can only be painted as an unclipped rectangle on this
+//    renderer (`border-radius` is only implemented for solid-color
+//    backgrounds — confirmed against the renderer source: the
+//    ConicGradient scene item carries no radius, unlike RoundedRectangle),
+//    so there is no way to draw this arc live; it has to be a texture.
+// 2. A flat gray stroke arc painted over the unread remainder, from the
+//    current reading to the end of the span — flat colors render fine as a
+//    live Path stroke, so this part stays dynamic.
+//
+// No separate hole/disc layer: the window's own background shows through
+// the center and the gap, so it is always exactly right by construction.
+component ProgressRing {
+    in property <length> diameter;
+    in property <length> thickness;
+    in property <float> fill;
+    in property <image> gradient-image;
+    in property <color> track-color;
+
+    private property <float> start-deg: 230;
+    private property <float> span-deg: 260;
+    private property <float> fill-end-deg: start-deg + fill * span-deg;
+
+    private property <float> px-diameter: diameter / 1px;
+    private property <float> center: px-diameter / 2;
+    // The stroke draws inward from its path line rather than straddling
+    // it, so the path itself has to run along the ring's outer edge, not
+    // its centerline.
+    private property <float> band-radius: center + 1;
+
+    width: diameter;
+    height: diameter;
+
+    Image {
+        width: 100%;
+        height: 100%;
+        source: gradient-image;
+        image-fit: ImageFit.fill;
+    }
+
+    Path {
+        width: 100%;
+        height: 100%;
+
+        viewbox-width: px-diameter;
+        viewbox-height: px-diameter;
+
+        fill: transparent;
+        stroke: track-color;
+        stroke-width: thickness + 2px;
+        stroke-line-cap: butt;
+
+        MoveTo {
+            x: center + band-radius * sin(fill-end-deg * 1deg);
+            y: center - band-radius * cos(fill-end-deg * 1deg);
+        }
+
+        ArcTo {
+            radius-x: band-radius;
+            radius-y: band-radius;
+            x: center + band-radius * sin((start-deg + span-deg) * 1deg);
+            y: center - band-radius * cos((start-deg + span-deg) * 1deg);
+            sweep: true;
+            large-arc: (span-deg * (1 - fill)) > 180;
+        }
+    }
+}
+
 export component EnvironmentDisplay inherits Window {
     width: 360px;
     height: 360px;
@@ -25,19 +97,32 @@ export component EnvironmentDisplay inherits Window {
     // unsigned value, so a negative reading cannot reach this.
     property <int> tenths: round(temperature * 10);
 
+    // Sensor value mapped onto its dial, 0..1. `min(0.9999, ...)` is Slint's
+    // own workaround (see SpinnerBase): a sweep of exactly 1.0 collapses to
+    // nothing instead of closing the circle.
+    property <float> temperature-fill: min(0.9999, max(0.0, (temperature - 5) / 40));
+    property <float> humidity-fill: min(0.9999, max(0.0, humidity / 100));
+    property <float> pressure-fill: min(0.9999, max(0.0, (pressure - 950) / 150));
+
     // ─────────────────────────────────────────────
     // Colors
     // ─────────────────────────────────────────────
 
-    property <color> background-color: #050a10;
-    property <color> text-main: #f4f7fb;
-    property <color> text-secondary: #8998aa;
+    property <color> background-color: #0b0d10;
+    property <color> text-main: #ffffff;
+    property <color> text-secondary: #8c949e;
 
-    property <color> temperature-color: #27e6b0;
-    property <color> humidity-color: #329cff;
-    property <color> pressure-color: #a879ff;
+    // Unread remainder of a gauge arc.
+    property <color> track-color: #363b42;
 
-    property <color> gauge-background: #182538;
+    // Leaf icon, status dot, status label.
+    property <color> accent-color: #34d399;
+
+    // Icon tints. Each is its ring's own choice, not derived from the ring's
+    // gradient stops.
+    property <color> thermometer-tint: #34d67a;
+    property <color> humidity-tint: #2e7dd1;
+    property <color> pressure-tint: #7b5ce0;
 
     background: background-color;
 
@@ -46,16 +131,16 @@ export component EnvironmentDisplay inherits Window {
     // ═════════════════════════════════════════════
 
     Rectangle {
-        x: 3px;
-        y: 3px;
-        width: 354px;
-        height: 354px;
+        x: 0px;
+        y: 0px;
+        width: 360px;
+        height: 360px;
 
-        border-radius: 177px;
+        border-radius: 180px;
         background: transparent;
 
-        border-width: 1px;
-        border-color: #263342;
+        border-width: 3px;
+        border-color: #2d3035;
     }
 
     // ═════════════════════════════════════════════
@@ -64,28 +149,27 @@ export component EnvironmentDisplay inherits Window {
 
     Image {
         x: (root.width - self.width) / 2;
-        y: 14px;
-        width: 38px;
-        height: 24px;
+        y: 15px;
+        width: 42px;
+        height: 26px;
 
-        source: @image-url("icons/environment_leaf_24.png");
-        colorize: temperature-color;
+        source: @image-url("icons/environment_leaf_42.png");
+        colorize: accent-color;
     }
 
     Text {
         x: 0px;
-        y: 42px;
+        y: 44px;
         width: 360px;
-        height: 24px;
+        height: 34px;
 
         text: "ENVIRONMENT";
         color: text-main;
 
-        font-size: 17px;
+        font-size: 28px;
         font-weight: 700;
 
         horizontal-alignment: center;
-        letter-spacing: 3px;
     }
 
     // Connection indicator: dot and label centred as one group.
@@ -93,20 +177,20 @@ export component EnvironmentDisplay inherits Window {
     // The label is dynamic, so the group cannot be placed with fixed
     // coordinates — the text measures itself and everything else hangs off
     // that. `dot-size` + `dot-gap` is the width the dot contributes.
-    property <length> dot-size: 10px;
-    property <length> dot-gap: 6px;
+    property <length> dot-size: 5px;
+    property <length> dot-gap: 3px;
 
     status-label := Text {
         x: (root.width - (self.preferred-width + dot-size + dot-gap)) / 2
             + dot-size + dot-gap;
-        y: 72px;
-        height: 18px;
+        y: 78px;
+        height: 16px;
 
         text: sensor-status;
 
-        color: temperature-color;
-        font-size: 9px;
-        font-weight: 600;
+        color: accent-color;
+        font-size: 13px;
+        font-weight: 700;
 
         vertical-alignment: center;
     }
@@ -119,45 +203,24 @@ export component EnvironmentDisplay inherits Window {
         height: dot-size;
 
         border-radius: self.width / 2;
-        background: temperature-color;
+        background: accent-color;
     }
 
     // ═════════════════════════════════════════════
     // MAIN TEMPERATURE GAUGE
     // ═════════════════════════════════════════════
 
-    // Background arc
-    Path {
-        x: 73px;
-        y: 96px;
-        width: 214px;
-        height: 214px;
+    // Temperature progress, -10°C..40°C, sweeping clockwise from 12 o'clock.
+    ProgressRing {
+        x: 105px;
+        y: 99px;
 
-        commands: "M 107 12 A 95 95 0 1 1 106.99 12.01";
+        diameter: 150px;
+        thickness: 12px;
 
-        fill: transparent;
-        stroke: gauge-background;
-        stroke-width: 12px;
-        stroke-line-cap: round;
-    }
-
-    // Temperature progress
-    //
-    // 23.7°C corresponds to roughly 72% on
-    // a -10°C → 40°C display range.
-
-    Path {
-        x: 73px;
-        y: 96px;
-        width: 214px;
-        height: 214px;
-
-        commands: "M 107 12 A 95 95 0 1 1 22.8 153.8";
-
-        fill: transparent;
-        stroke: temperature-color;
-        stroke-width: 12px;
-        stroke-line-cap: round;
+        fill: temperature-fill;
+        track-color: track-color;
+        gradient-image: @image-url("icons/gauge_temperature_150.png");
     }
 
     // ═════════════════════════════════════════════
@@ -170,13 +233,13 @@ export component EnvironmentDisplay inherits Window {
     // one place. They are pre-scaled to their display size — texture sampling
     // here is nearest-neighbour, so runtime downscaling would alias.
     Image {
-        x: (root.width - self.width) / 2;
-        y: 112px;
-        width: 15px;
-        height: 32px;
+        x: 173px;
+        y: 120px;
+        width: 16px;
+        height: 35px;
 
-        source: @image-url("icons/thermometer_32.png");
-        colorize: temperature-color;
+        source: @image-url("icons/thermometer_35.png");
+        colorize: thermometer-tint;
     }
 
     // ═════════════════════════════════════════════
@@ -187,13 +250,13 @@ export component EnvironmentDisplay inherits Window {
         x: 0px;
         y: 151px;
         width: 360px;
-        height: 75px;
+        height: 58px;
 
         text: floor(tenths / 10) + "." + mod(tenths, 10);
 
         color: text-main;
 
-        font-size: 64px;
+        font-size: 48px;
         font-weight: 700;
 
         horizontal-alignment: center;
@@ -202,16 +265,16 @@ export component EnvironmentDisplay inherits Window {
 
     Text {
         x: 0px;
-        y: 221px;
+        y: 202px;
         width: 360px;
-        height: 32px;
+        height: 19px;
 
         text: "°C";
 
         color: text-main;
 
-        font-size: 24px;
-        font-weight: 500;
+        font-size: 16px;
+        font-weight: 700;
 
         horizontal-alignment: center;
         vertical-alignment: center;
@@ -219,94 +282,74 @@ export component EnvironmentDisplay inherits Window {
 
     Text {
         x: 0px;
-        y: 253px;
+        y: 219px;
         width: 360px;
-        height: 20px;
+        height: 15px;
 
         text: "TEMPERATURE";
 
         color: text-secondary;
 
-        font-size: 10px;
+        font-size: 12px;
         font-weight: 600;
 
         horizontal-alignment: center;
-        letter-spacing: 2px;
+        letter-spacing: 1px;
     }
 
     // ═════════════════════════════════════════════
     // HUMIDITY GAUGE
     // ═════════════════════════════════════════════
 
-    // Background
+    ProgressRing {
+        x: 79px;
+        y: 249px;
 
-    Path {
-        x: 71px;
-        y: 244px;
-        width: 82px;
-        height: 82px;
+        diameter: 88px;
+        thickness: 5px;
 
-        commands: "M 41 5 A 36 36 0 1 1 40.99 5.01";
-
-        fill: transparent;
-        stroke: gauge-background;
-        stroke-width: 5px;
-        stroke-line-cap: round;
-    }
-
-    // 48% arc
-
-    Path {
-        x: 71px;
-        y: 244px;
-        width: 82px;
-        height: 82px;
-
-        commands: "M 41 5 A 36 36 0 0 1 28.7 74.5";
-
-        fill: transparent;
-        stroke: humidity-color;
-        stroke-width: 5px;
-        stroke-line-cap: round;
+        fill: humidity-fill;
+        track-color: track-color;
+        gradient-image: @image-url("icons/gauge_humidity_88.png");
     }
 
     // Droplet
 
     Image {
-        x: 103px;
-        y: 254px;
-        width: 17px;
-        height: 23px;
+        x: 114px;
+        y: 262px;
+        width: 18px;
+        height: 24px;
 
-        source: @image-url("icons/humidity_drop_23.png");
-        colorize: humidity-color;
+        source: @image-url("icons/humidity_drop_24.png");
+        colorize: humidity-tint;
     }
 
     Text {
-        x: 68px;
-        y: 277px;
+        x: 79px;
+        y: 289px;
         width: 88px;
-        height: 25px;
+        height: 21px;
 
         text: round(humidity) + "%";
 
         color: text-main;
-        font-size: 20px;
+        font-size: 17px;
         font-weight: 700;
 
         horizontal-alignment: center;
     }
 
     Text {
-        x: 68px;
-        y: 303px;
+        x: 79px;
+        y: 319px;
         width: 88px;
-        height: 14px;
+        height: 11px;
 
         text: "HUMIDITY";
 
         color: text-secondary;
-        font-size: 8px;
+        font-size: 9px;
         font-weight: 600;
 
         horizontal-alignment: center;
@@ -317,86 +360,72 @@ export component EnvironmentDisplay inherits Window {
     // PRESSURE GAUGE
     // ═════════════════════════════════════════════
 
-    Path {
-        x: 207px;
-        y: 244px;
-        width: 82px;
-        height: 82px;
+    ProgressRing {
+        x: 191px;
+        y: 249px;
 
-        commands: "M 41 5 A 36 36 0 1 1 40.99 5.01";
+        diameter: 88px;
+        thickness: 5px;
 
-        fill: transparent;
-        stroke: gauge-background;
-        stroke-width: 5px;
-        stroke-line-cap: round;
-    }
-
-    Path {
-        x: 207px;
-        y: 244px;
-        width: 82px;
-        height: 82px;
-
-        commands: "M 41 5 A 36 36 0 0 1 72 58";
-
-        fill: transparent;
-        stroke: pressure-color;
-        stroke-width: 5px;
-        stroke-line-cap: round;
+        fill: pressure-fill;
+        track-color: track-color;
+        gradient-image: @image-url("icons/gauge_pressure_88.png");
     }
 
     // Pressure icon
 
     Image {
-        x: 239px;
-        y: 254px;
-        width: 18px;
-        height: 18px;
+        x: 223px;
+        y: 259px;
+        width: 24px;
+        height: 24px;
 
-        source: @image-url("icons/pressure_gauge_18.png");
-        colorize: pressure-color;
+        source: @image-url("icons/pressure_gauge_24.png");
+        colorize: pressure-tint;
     }
 
     Text {
-        x: 204px;
-        y: 277px;
+        x: 191px;
+        y: 284px;
         width: 88px;
-        height: 25px;
+        height: 21px;
 
         text: round(pressure);
 
         color: text-main;
-        font-size: 20px;
+        font-size: 17px;
         font-weight: 700;
 
         horizontal-alignment: center;
     }
 
+    // Not in the Figma spec pasted — inferred position in the gap between
+    // the value and the PRESSURE caption.
     Text {
-        x: 204px;
-        y: 299px;
+        x: 191px;
+        y: 305px;
         width: 88px;
-        height: 15px;
+        height: 12px;
 
         text: "hPa";
 
-        color: text-main;
-        font-size: 10px;
+        color: text-secondary;
+        font-size: 9px;
         font-weight: 500;
 
         horizontal-alignment: center;
     }
 
     Text {
-        x: 204px;
-        y: 313px;
+        x: 191px;
+        y: 319px;
         width: 88px;
-        height: 12px;
+        height: 11px;
 
         text: "PRESSURE";
 
         color: text-secondary;
-        font-size: 8px;
+        font-size: 9px;
         font-weight: 600;
 
         horizontal-alignment: center;

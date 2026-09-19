@@ -6,7 +6,7 @@
 //! board: what time is it, and where do rendered pixels go.
 
 use alloc::{boxed::Box, rc::Rc};
-use core::{ops::Range, time::Duration};
+use core::time::Duration;
 
 use canary_core::prelude::*;
 use embedded_graphics::{
@@ -15,14 +15,12 @@ use embedded_graphics::{
     prelude::{Point, Size},
     primitives::Rectangle,
 };
-use esp_hal::time::Instant;
+use esp_hal::{psram::Psram, time::Instant};
 use slint::{
     PhysicalSize, PlatformError,
     platform::{
         Platform, WindowAdapter,
-        software_renderer::{
-            LineBufferProvider, MinimalSoftwareWindow, RepaintBufferType, Rgb565Pixel,
-        },
+        software_renderer::{MinimalSoftwareWindow, RepaintBufferType, Rgb565Pixel},
     },
 };
 
@@ -64,62 +62,6 @@ impl Platform for Panel {
     }
 }
 
-/// Lends Slint one panel row at a time, then pushes the rendered span out.
-struct LineSink<'a, D>
-where
-    D: DrawTarget<Color = Rgb565>,
-{
-    /// One full panel row; Slint renders into the dirty span of it.
-    buffer: &'a mut [Rgb565Pixel],
-    /// Where the rendered span goes.
-    display: &'a mut D,
-    /// First error the panel returned. `process_line` cannot report one, so it
-    /// is parked here for [`render`] to pick up.
-    failed: &'a mut Option<D::Error>,
-}
-
-impl<D> LineBufferProvider for LineSink<'_, D>
-where
-    D: DrawTarget<Color = Rgb565>,
-{
-    type TargetPixel = Rgb565Pixel;
-
-    fn process_line(
-        &mut self,
-        line: usize,
-        range: Range<usize>,
-        render_fn: impl FnOnce(&mut [Self::TargetPixel]),
-    ) {
-        let pixels = &mut self.buffer[range.clone()];
-        render_fn(pixels);
-
-        // Keep rendering after a failure — Slint's own bookkeeping expects
-        // every line it asked for to come back — but stop touching the bus.
-        if self.failed.is_some() || range.is_empty() {
-            return;
-        }
-
-        let (Ok(x), Ok(y), Ok(width)) = (
-            i32::try_from(range.start),
-            i32::try_from(line),
-            u32::try_from(range.len()),
-        ) else {
-            return;
-        };
-
-        // Same 565 bit layout on both sides; the driver handles byte order.
-        let colors = pixels.iter().map(|p| Rgb565::from(RawU16::new(p.0)));
-
-        // One row per call: the driver sets the window once, then streams.
-        if let Err(e) = self.display.fill_contiguous(
-            &Rectangle::new(Point::new(x, y), Size::new(width, 1)),
-            colors,
-        ) {
-            *self.failed = Some(e);
-        }
-    }
-}
-
 /// Hand Slint the window it draws into, and start its clock.
 ///
 /// # Errors
@@ -143,9 +85,50 @@ pub(crate) fn init() -> Result<Rc<MinimalSoftwareWindow>> {
     Ok(window)
 }
 
-/// Draw whatever changed since the last call, straight to the panel.
+/// Carve the framebuffer out of PSRAM.
 ///
-/// `buffer` is one full panel row, reused across frames.
+/// Slint draws whole curves at a time, so it needs the entire window in
+/// memory — 253 KiB at this size, which internal SRAM cannot spare next to
+/// the heap and the DMA buffers.
+///
+/// # Errors
+///
+/// [`Error::Init`] if PSRAM is absent or too small to hold a frame.
+pub(crate) fn frame_buffer(psram: &Psram) -> Result<&'static mut [Rgb565Pixel]> {
+    let pixels = usize::from(display::WIDTH) * usize::from(display::HEIGHT);
+    let bytes = pixels * size_of::<Rgb565Pixel>();
+
+    let (base, available) = psram.raw_parts();
+    if available < bytes {
+        return Err(Error::Init("psram too small for a frame"));
+    }
+    // Checked rather than assumed, so the cast below cannot be misaligned.
+    if base.align_offset(align_of::<Rgb565Pixel>()) != 0 {
+        return Err(Error::Init("psram base misaligned"));
+    }
+
+    // SAFETY: `raw_parts` hands back the whole mapped PSRAM window. Nothing
+    // else claims it — no allocator is attached to that range — and this runs
+    // once during bring-up, before the buffer is handed to anyone. Zeroing
+    // first both initialises the memory (PSRAM powers up with garbage) and
+    // leaves the first frame on a black background. `Rgb565Pixel` needs
+    // 2-byte alignment; the window starts on a page boundary.
+    // Alignment is checked above, not assumed, so the cast is sound.
+    #[allow(clippy::cast_ptr_alignment)]
+    unsafe {
+        core::ptr::write_bytes(base, 0, bytes);
+        Ok(core::slice::from_raw_parts_mut(
+            base.cast::<Rgb565Pixel>(),
+            pixels,
+        ))
+    }
+}
+
+/// Draw whatever changed since the last call, then push only the rectangles
+/// that actually changed out to the panel.
+///
+/// `frame` is the whole window, and keeps its contents between calls: that is
+/// what lets Slint repaint just the dirty parts.
 ///
 /// # Errors
 ///
@@ -153,20 +136,53 @@ pub(crate) fn init() -> Result<Rc<MinimalSoftwareWindow>> {
 pub(crate) fn render<D>(
     window: &MinimalSoftwareWindow,
     display: &mut D,
-    buffer: &mut [Rgb565Pixel],
+    frame: &mut [Rgb565Pixel],
 ) -> core::result::Result<(), D::Error>
 where
     D: DrawTarget<Color = Rgb565>,
 {
-    let mut failed = None;
+    let stride = usize::from(display::WIDTH);
+    let mut dirty = None;
 
     window.draw_if_needed(|renderer| {
-        renderer.render_by_line(LineSink {
-            buffer,
-            display,
-            failed: &mut failed,
-        });
+        dirty = Some(renderer.render(frame, stride));
     });
 
-    failed.map_or(Ok(()), Err)
+    let Some(dirty) = dirty else {
+        return Ok(());
+    };
+
+    let frame = &*frame;
+
+    // The rectangles do not overlap, so every pixel goes out at most once.
+    for (origin, size) in dirty.iter() {
+        let (Ok(x), Ok(y)) = (usize::try_from(origin.x), usize::try_from(origin.y)) else {
+            continue;
+        };
+        let (Ok(w), Ok(h)) = (usize::try_from(size.width), usize::try_from(size.height)) else {
+            continue;
+        };
+        if w == 0 || h == 0 {
+            continue;
+        }
+
+        // Rows are `stride` apart in the framebuffer; `fill_contiguous` wants
+        // them back to back, so walk the rectangle row by row.
+        let colors = (0..h).flat_map(|row| {
+            let begin = (y + row) * stride + x;
+            frame[begin..begin + w]
+                .iter()
+                .map(|p| Rgb565::from(RawU16::new(p.0)))
+        });
+
+        display.fill_contiguous(
+            &Rectangle::new(
+                Point::new(origin.x, origin.y),
+                Size::new(size.width, size.height),
+            ),
+            colors,
+        )?;
+    }
+
+    Ok(())
 }
