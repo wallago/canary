@@ -19,6 +19,12 @@ export component EnvironmentDisplay inherits Window {
 
     in property <string> sensor-status: "X6 CONNECTED";
 
+    // Slint has no printf. `round()` returns an int, so deriving both halves
+    // of the reading from one integer tenths value keeps the fraction from
+    // being stringified as a float ("4.30000"). The sensor decodes an
+    // unsigned value, so a negative reading cannot reach this.
+    property <int> tenths: round(temperature * 10);
+
     // ─────────────────────────────────────────────
     // Colors
     // ─────────────────────────────────────────────
@@ -56,6 +62,16 @@ export component EnvironmentDisplay inherits Window {
     // HEADER
     // ═════════════════════════════════════════════
 
+    Image {
+        x: (root.width - self.width) / 2;
+        y: 14px;
+        width: 38px;
+        height: 24px;
+
+        source: @image-url("icons/environment_leaf_24.png");
+        colorize: temperature-color;
+    }
+
     Text {
         x: 0px;
         y: 42px;
@@ -72,34 +88,18 @@ export component EnvironmentDisplay inherits Window {
         letter-spacing: 3px;
     }
 
-    // Connection indicator
+    // Connection indicator: dot and label centred as one group.
+    //
+    // The label is dynamic, so the group cannot be placed with fixed
+    // coordinates — the text measures itself and everything else hangs off
+    // that. `dot-size` + `dot-gap` is the width the dot contributes.
+    property <length> dot-size: 10px;
+    property <length> dot-gap: 6px;
 
-    Rectangle {
-        x: 154px;
+    status-label := Text {
+        x: (root.width - (self.preferred-width + dot-size + dot-gap)) / 2
+            + dot-size + dot-gap;
         y: 72px;
-
-        width: 52px;
-        height: 16px;
-
-        background: transparent;
-    }
-
-    Rectangle {
-        x: 159px;
-        y: 77px;
-
-        width: 10px;
-        height: 10px;
-
-        border-radius: 5px;
-        background: temperature-color;
-    }
-
-    Text {
-        x: 174px;
-        y: 73px;
-
-        width: 90px;
         height: 18px;
 
         text: sensor-status;
@@ -109,6 +109,17 @@ export component EnvironmentDisplay inherits Window {
         font-weight: 600;
 
         vertical-alignment: center;
+    }
+
+    Rectangle {
+        x: status-label.x - dot-size - dot-gap;
+        y: status-label.y + (status-label.height - self.height) / 2;
+
+        width: dot-size;
+        height: dot-size;
+
+        border-radius: self.width / 2;
+        background: temperature-color;
     }
 
     // ═════════════════════════════════════════════
@@ -153,17 +164,19 @@ export component EnvironmentDisplay inherits Window {
     // THERMOMETER ICON
     // ═════════════════════════════════════════════
 
-    Path {
-        x: 174px;
+    // Icons are images, not paths: the software renderer drops Path elements
+    // in line-by-line mode, but draws textures. Each source is white-on-
+    // transparent and tinted with `colorize`, so the palette stays defined in
+    // one place. They are pre-scaled to their display size — texture sampling
+    // here is nearest-neighbour, so runtime downscaling would alias.
+    Image {
+        x: (root.width - self.width) / 2;
         y: 112px;
-        width: 14px;
+        width: 15px;
         height: 32px;
 
-        commands: "M 7 0 C 3.7 0 1.5 2.5 1.5 5.5 L 1.5 20 C -1 22 0 28 7 28 C 14 28 15 22 12.5 20 L 12.5 5.5 C 12.5 2.5 10.3 0 7 0 Z";
-
-        fill: transparent;
-        stroke: temperature-color;
-        stroke-width: 2px;
+        source: @image-url("icons/thermometer_32.png");
+        colorize: temperature-color;
     }
 
     // ═════════════════════════════════════════════
@@ -176,8 +189,7 @@ export component EnvironmentDisplay inherits Window {
         width: 360px;
         height: 75px;
 
-        text: round(temperature) + "." +
-            mod(abs(temperature * 10), 10);
+        text: floor(tenths / 10) + "." + mod(tenths, 10);
 
         color: text-main;
 
@@ -229,8 +241,8 @@ export component EnvironmentDisplay inherits Window {
     // Background
 
     Path {
-        x: 51px;
-        y: 267px;
+        x: 71px;
+        y: 244px;
         width: 82px;
         height: 82px;
 
@@ -245,8 +257,8 @@ export component EnvironmentDisplay inherits Window {
     // 48% arc
 
     Path {
-        x: 51px;
-        y: 267px;
+        x: 71px;
+        y: 244px;
         width: 82px;
         height: 82px;
 
@@ -260,22 +272,19 @@ export component EnvironmentDisplay inherits Window {
 
     // Droplet
 
-    Path {
-        x: 83px;
-        y: 277px;
-        width: 18px;
+    Image {
+        x: 103px;
+        y: 254px;
+        width: 17px;
         height: 23px;
 
-        commands: "M 9 0 C 7 5 1 11 1 15 C 1 20 4.5 23 9 23 C 13.5 23 17 20 17 15 C 17 11 11 5 9 0 Z";
-
-        fill: transparent;
-        stroke: humidity-color;
-        stroke-width: 2px;
+        source: @image-url("icons/humidity_drop_23.png");
+        colorize: humidity-color;
     }
 
     Text {
-        x: 48px;
-        y: 300px;
+        x: 68px;
+        y: 277px;
         width: 88px;
         height: 25px;
 
@@ -289,8 +298,8 @@ export component EnvironmentDisplay inherits Window {
     }
 
     Text {
-        x: 48px;
-        y: 326px;
+        x: 68px;
+        y: 303px;
         width: 88px;
         height: 14px;
 
@@ -309,8 +318,8 @@ export component EnvironmentDisplay inherits Window {
     // ═════════════════════════════════════════════
 
     Path {
-        x: 227px;
-        y: 267px;
+        x: 207px;
+        y: 244px;
         width: 82px;
         height: 82px;
 
@@ -323,8 +332,8 @@ export component EnvironmentDisplay inherits Window {
     }
 
     Path {
-        x: 227px;
-        y: 267px;
+        x: 207px;
+        y: 244px;
         width: 82px;
         height: 82px;
 
@@ -338,22 +347,19 @@ export component EnvironmentDisplay inherits Window {
 
     // Pressure icon
 
-    Path {
-        x: 259px;
-        y: 277px;
+    Image {
+        x: 239px;
+        y: 254px;
         width: 18px;
         height: 18px;
 
-        commands: "M 9 1 A 8 8 0 1 1 1 9 A 8 8 0 0 1 9 1 M 9 5 L 9 10 L 13 12";
-
-        fill: transparent;
-        stroke: pressure-color;
-        stroke-width: 2px;
+        source: @image-url("icons/pressure_gauge_18.png");
+        colorize: pressure-color;
     }
 
     Text {
-        x: 224px;
-        y: 300px;
+        x: 204px;
+        y: 277px;
         width: 88px;
         height: 25px;
 
@@ -367,8 +373,8 @@ export component EnvironmentDisplay inherits Window {
     }
 
     Text {
-        x: 224px;
-        y: 322px;
+        x: 204px;
+        y: 299px;
         width: 88px;
         height: 15px;
 
@@ -382,8 +388,8 @@ export component EnvironmentDisplay inherits Window {
     }
 
     Text {
-        x: 224px;
-        y: 336px;
+        x: 204px;
+        y: 313px;
         width: 88px;
         height: 12px;
 
