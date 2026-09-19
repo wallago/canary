@@ -10,6 +10,13 @@ use self::{qspi::QspiInterface, tca9554::TcaReset};
 mod qspi;
 mod tca9554;
 
+/// Visible width of the panel, in pixels.
+pub(crate) const WIDTH: u16 = 360;
+
+/// Visible height of the panel, in pixels. The glass is round, so the corners
+/// of this square are never lit.
+pub(crate) const HEIGHT: u16 = 360;
+
 /// ST77916 over QSPI, reset via the TCA9554 expander, unbuffered RGB565 `DrawTarget`.
 pub(crate) type PanelDisplay<'d> = St77916<QspiInterface<'d>, TcaReset<'d>, Unbuffered<Rgb565>>;
 
@@ -215,7 +222,7 @@ pub(crate) fn build<'d>(
     St77916::builder(
         QspiInterface::new(bus),
         TcaReset::new(i2c),
-        DisplaySize::new(360, 360),
+        DisplaySize::new(WIDTH, HEIGHT),
     )
     .with_init_commands(PANEL_INIT)
     .unbuffered::<Rgb565>()

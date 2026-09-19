@@ -19,7 +19,13 @@ esp-bootloader-esp-idf = { version = "0.5.0", features = ["esp32s3"] }
 esp-hal                = { version = "1.1.2", features = ["esp32s3", "unstable"] }
 esp-println            = { version = "0.17.0", features = ["esp32s3", "log-04"] }
 log                    = "0.4"
-st77916                = "0.1.1"
+# `software-renderer-path` is implied by slint's `std` feature, which is off
+# here: without it every `Path` element in the UI renders as nothing.
+slint   = { version = "1.16.1", default-features = false, features = ["compat-1-2", "libm", "renderer-software", "software-renderer-path", "unsafe-single-threaded"] }
+st77916 = "0.1.1"
+
+[build-dependencies]
+slint-build = "1.16.1"
 
 [lints]
 workspace = true

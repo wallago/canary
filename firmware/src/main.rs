@@ -13,8 +13,12 @@
 // Imported purely for its linker side effect: esp-backtrace supplies the
 // `#[panic_handler]` that every `no_std` binary must provide exactly once.
 use esp_backtrace as _;
-use esp_hal::{clock::CpuClock, delay::Delay, main};
+use esp_hal::{clock::CpuClock, main};
 use log::info;
+
+// Slint's renderer, its item tree and the panel driver's per-row scratch all
+// allocate. `esp_alloc` registers the global allocator this pulls in.
+extern crate alloc;
 
 /// Main application.
 mod app;
@@ -27,6 +31,9 @@ mod sensor;
 
 /// Board hardware config.
 mod board;
+
+/// The Slint screen and the bridge from its renderer to the panel.
+mod ui;
 
 /// Helper functions.
 pub mod help;
@@ -42,9 +49,11 @@ esp_bootloader_esp_idf::esp_app_desc!();
 // to; falling off the end of `main` would execute whatever bytes follow it.
 #[main]
 fn main() -> ! {
-    // Registers the heap before anything can allocate. st77916's unbuffered
-    // DrawTarget takes a row buffer per draw call; nothing else here allocates.
-    esp_alloc::heap_allocator!(size: 16 * 1024);
+    // Registers the heap before anything can allocate. Slint's item tree and
+    // render scene live here, alongside the row buffer st77916's unbuffered
+    // DrawTarget takes per draw call — hence far more than the panel alone
+    // needed. Internal SRAM only: this board has no PSRAM configured.
+    esp_alloc::heap_allocator!(size: 150 * 1024);
 
     // Routes `log` macros to the UART / USB-Serial-JTAG console. The filter
     // comes from `ESP_LOG` in `.cargo/config.toml`, which esp-println's build

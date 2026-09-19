@@ -12,9 +12,6 @@ pub mod error;
 /// Helper functions.
 pub mod help;
 
-/// Widget renderer.
-pub mod ui;
-
 /// Common types that can be glob-imported for convenience.
 pub mod prelude;
 
