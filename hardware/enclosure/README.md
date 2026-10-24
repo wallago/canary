@@ -42,8 +42,8 @@ reference shapes.
   edge. Its connector points at the screen and sits in a pocket under the
   cover. The gas element comes up through the window.
 - Each cover screws to the shell with four M2 screws into heat-set inserts.
-- An internal wall keeps the sensor's chamber apart from the board's, so the
-  ESP32's heat doesn't reach the sensor.
+- Inside, the screen arm and the foot are one open space, with no wall
+  between the board and the sensor.
 - The USB-C breakout lies on the floor of the foot, under the X6, its
   receptacle in the port at the back. Two M2 bolts from below hold it, with
   nuts on top.
@@ -65,9 +65,8 @@ reference shapes.
 Everything comes in through the breakout at the back. Its VBUS and GND
 split inside: one branch to the X6's 5 V and GND, the other through the
 pigtail into the board's USB-C, together with D+ and D-, so flashing over
-the same port still works. The pigtail and the X6 leads pass through the
-slot at the bottom of the divider. Don't feed 5 V into the `BAT` connector;
-it expects a single 3.7 V lithium cell.
+the same port still works. Don't feed 5 V into the `BAT` connector; it
+expects a single 3.7 V lithium cell.
 
 ## Still to confirm
 

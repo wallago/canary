@@ -169,10 +169,11 @@ module screen_cavity() {
     }
 }
 
+// Runs into the screen cavity: no wall between the board and the sensor.
 module foot_cavity() {
     difference() {
         translate([-(width / 2 - wall), 0, wall]) cube([width - 2 * wall, foot_len - wall, foot_t]);
-        arm_frame() translate([-100, -100, -50]) cube([200, 100 + arm_t, 300]);
+        arm_frame() translate([-100, -100, -50]) cube([200, 100 + arm_t - cover_t - eps, 300]);
     }
 }
 
@@ -247,11 +248,6 @@ module shell() {
         for (x = [-10 : 4 : 10]) translate([x - 0.8, vent_y - 10, -1]) cube([1.6, 13, wall + 2]);
         usbc_port();
         breakout_seat();
-        // the X6 leads and the USB-C pigtail to the board go through the divider
-        intersection() {
-            translate([6, 0, wall + 1]) cube([12, 40, 6]);
-            arm_frame() translate([-100, arm_t - cover_t - 1, -50]) cube([200, cover_t + 2, 300]);
-        }
         // rubber feet
         for (x = [-width / 2 + 8, width / 2 - 8], y = [10, foot_len - 8])
             translate([x, y, -eps]) cylinder(d = 8.5, h = 0.8);
