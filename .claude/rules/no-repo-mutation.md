@@ -4,6 +4,10 @@
 anything on a remote.** Not with permission, not "just this once", not as the
 last step of something I approved. This is not a review gate — it is off.
 
+Exception: on a `claude/*` branch, `git commit`, `git push` to that same
+branch, and opening a PR from it are allowed once I've said go. Never
+force-push, never touch `main` or tags, never merge.
+
 Specifically off: `commit`, `describe`, `push`, `tag`, `rebase`, `abandon`,
 `reset`, `checkout`, `new`, `edit`, `bookmark`, `gh pr create`, `gh release`,
 `cargo publish`, and any task-runner recipe that wraps one of those.
