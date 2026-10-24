@@ -19,7 +19,7 @@ variable at the top of the file. Units are millimetres.
 
 | Part           | What it is                                                                                                                  |
 | -------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `shell`        | Rounded body: screen opening, USB-C debug opening underneath, power socket sleeve at the back, floor vents under the sensor |
+| `shell`        | Rounded body: screen opening, USB-C port at the back, seat for the USB-C breakout, floor vents under the sensor            |
 | `screen_cover` | Plate behind the screen: three screw holes for the board, vertical vents                                                    |
 | `sensor_cover` | Plate over the foot: standoffs for the X6, window for its gas element, pocket for its connector, vents                      |
 
@@ -44,6 +44,9 @@ reference shapes.
 - Each cover screws to the shell with four M2 screws into heat-set inserts.
 - An internal wall keeps the sensor's chamber apart from the board's, so the
   ESP32's heat doesn't reach the sensor.
+- The USB-C breakout lies on the floor of the foot, under the X6, its
+  receptacle in the port at the back. Two M2 bolts from below hold it, with
+  nuts on top.
 - The PWR, BOOT and RST buttons and the TF slot are reached with the cover
   off.
 
@@ -53,16 +56,18 @@ reference shapes.
 - 2 × M2×10 countersunk bolts and 2 × M2 nuts for the X6
 - 8 × M2×6 countersunk screws and 8 × M2 heat-set inserts for the covers
 - 4 × 8 mm adhesive rubber feet
-- 1 female USB-C receptacle, glued into the sleeve at the back
+- 1 USB-C female breakout, 21.6 × 12.7 mm, and 2 × M2×6 countersunk bolts
+  and 2 × M2 nuts for it
+- 1 short male USB-C pigtail, right-angle, into the board's own port
 
 ## Power
 
-The board's own USB-C is for flashing and debugging only; reach it through
-the opening underneath. Everyday power comes in through the glued USB-C
-receptacle and is split inside to the board's VBUS and the X6's 5 V pin. Put
-a Schottky diode (an SS14 or similar) in series on the board branch, so a USB
-host plugged in for flashing never fights the other supply. Don't feed 5 V
-into the `BAT` connector; it expects a single 3.7 V lithium cell.
+Everything comes in through the breakout at the back. Its VBUS and GND
+split inside: one branch to the X6's 5 V and GND, the other through the
+pigtail into the board's USB-C, together with D+ and D-, so flashing over
+the same port still works. The pigtail and the X6 leads pass through the
+slot at the bottom of the divider. Don't feed 5 V into the `BAT` connector;
+it expects a single 3.7 V lithium cell.
 
 ## Still to confirm
 
@@ -70,3 +75,5 @@ into the `BAT` connector; it expects a single 3.7 V lithium cell.
 - The M2 hole centres on both boards (`board_holes`, `sensor_holes`) and the
   X6's gas element and connector positions were read off the drawings to
   about 0.5 mm.
+- The breakout's hole centres (`breakout_holes`) and how far its receptacle
+  overhangs the PCB (`usbc_overhang`) were read off a product photo.

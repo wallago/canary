@@ -62,11 +62,16 @@ window = 13;                    // square window over the gas element
 plug_len = 8;                   // room for the plug beyond the board edge
 
 /* [Power] */
-usbc = [8.94, 3.26];    // USB-C receptacle shell, width by height
-usbc_fit = 0.15;        // clearance per side for gluing
-usbc_x = -14;           // seen from the front
-usbc_z = 6;             // centre height
-usbc_sleeve = 5;        // sleeve depth behind the back wall
+// Power comes in through a red USB-C breakout lying on the floor under the
+// X6, its receptacle facing out of the back wall. Breakout frame: x across,
+// y from the receptacle edge of its PCB into the foot, z up from the floor.
+breakout = [21.6, 12.7, 1.6];       // PCB: along x, along y, thickness
+breakout_holes = [[-7.5, 3.3], [7.5, 3.3]];     // its two holes, read off a photo; check with calipers
+usbc = [8.94, 3.26];    // receptacle shell, width by height, on top of the PCB
+usbc_fit = 0.3;         // clearance per side in the back wall
+usbc_overhang = 0.8;    // receptacle front past the PCB edge, estimated
+plug_recess = [13, 7.5, 1.2];       // outside pocket so the plug's overmould reaches the receptacle
+solder_relief = 0.6;    // floor pocket under the PCB for solder joints
 
 /* [Vents] */
 arm_vent_s = [30, 58];  // span of the vertical vents along the face
@@ -179,23 +184,34 @@ module aperture() {
     }
 }
 
-// Power in: a female USB-C receptacle glued into a fitted sleeve in the back of the foot.
-module usbc_stadium(len) {
-    r = (usbc[1] + 2 * usbc_fit) / 2;
-    hull() for (x = [-1, 1]) translate([x * (usbc[0] / 2 + usbc_fit - r), 0, 0]) rotate([-90, 0, 0]) cylinder(r = r, h = len);
+// Power in: the breakout's receptacle edge sits against the inside of the back wall.
+module breakout_frame() { translate([0, foot_len - wall - fit, wall]) mirror([0, 1, 0]) children(); }
+
+module stadium(w, h, len) {
+    r = h / 2;
+    hull() for (x = [-1, 1]) translate([x * (w / 2 - r), 0, 0]) rotate([90, 0, 0]) cylinder(r = r, h = len);
 }
 
-module usbc_sleeve() {
-    translate([usbc_x - 7.5, foot_len - wall - usbc_sleeve, wall - eps]) cube([15, usbc_sleeve + eps, usbc_z + 4.5 - wall]);
+module usbc_port() {
+    zc = wall + breakout[2] + usbc[1] / 2;
+    translate([0, foot_len + 1, zc]) {
+        stadium(usbc[0] + 2 * usbc_fit, usbc[1] + 2 * usbc_fit, wall + fit + 2);
+        stadium(plug_recess[0], plug_recess[1], 1 + plug_recess[2]);
+    }
 }
 
-module usbc_hole() {
-    translate([usbc_x, foot_len - wall - usbc_sleeve - 1, usbc_z]) usbc_stadium(usbc_sleeve + wall + 2);
-}
-
-// USB-C points down out of the board; plug in from below to flash.
-module usb_slot() {
-    translate([-6.5, 3, -1]) cube([13, 10, wall + 2]);
+// The breakout rests on the floor, held by two M2 bolts from below with nuts on top.
+module breakout_seat() {
+    breakout_frame() {
+        difference() {
+            translate([-breakout[0] / 2 - fit, -fit, -solder_relief]) cube([breakout[0] + 2 * fit, breakout[1] + 2 * fit, solder_relief + eps]);
+            for (h = breakout_holes) translate([h[0], h[1], -1]) cylinder(d = 5, h = 2);
+        }
+        for (h = breakout_holes) translate([h[0], h[1], -wall - 1]) {
+            cylinder(d = m2_clear, h = wall + 2);
+            cylinder(d1 = m2_head + 0.4, d2 = m2_clear, h = 1 + 1.2);
+        }
+    }
 }
 
 // Shell bosses for the cover screws: four for each cover, at its corners.
@@ -224,16 +240,16 @@ module shell() {
                 foot_cavity();
                 cover_region(fit, 10);
             }
-            intersection() { union() { shell_bosses(); usbc_sleeve(); } envelope(); }
+            intersection() { shell_bosses(); envelope(); }
         }
         aperture();
-        usb_slot();
-        // floor vents under the sensor
-        for (x = [-10 : 4 : 10]) translate([x - 0.8, vent_y - 10, -1]) cube([1.6, 20, wall + 2]);
-        usbc_hole();
-        // power and sensor leads through the divider to the board
+        // floor vents under the sensor, clear of the breakout
+        for (x = [-10 : 4 : 10]) translate([x - 0.8, vent_y - 10, -1]) cube([1.6, 13, wall + 2]);
+        usbc_port();
+        breakout_seat();
+        // the X6 leads and the USB-C pigtail to the board go through the divider
         intersection() {
-            translate([10, 0, wall + 2]) cube([8, 40, 3.5]);
+            translate([6, 0, wall + 1]) cube([12, 40, 6]);
             arm_frame() translate([-100, arm_t - cover_t - 1, -50]) cube([200, cover_t + 2, 300]);
         }
         // rubber feet
@@ -295,6 +311,10 @@ module screen_ghost() {
 module pcb_ghost() {
     arm_frame() translate([0, pcb_front_n, screen_s]) rotate([-90, 0, 0]) cylinder(d = pcb_d, h = pcb_t, $fn = 96);
     x6_frame() translate([-sensor[0] / 2, -sensor[1] / 2, -1.2]) cube([sensor[0], sensor[1], 1.2]);
+    breakout_frame() {
+        translate([-breakout[0] / 2, 0, 0]) cube(breakout);
+        translate([-usbc[0] / 2, -usbc_overhang, breakout[2]]) cube([usbc[0], 7.4, usbc[1]]);
+    }
 }
 
 module x6_ghost() {
