@@ -27,7 +27,7 @@ wall = 2;
 cover_t = 2.4;
 edge_r = 3;         // rounding on every outer edge
 face_r = 9;         // corner radius of the screen face
-fit = 0.2;          // cover-to-shell clearance per side
+fit = 0.4;          // cover-to-shell clearance per side
 bezel = 1.6;
 
 /* [Screen board] */
@@ -78,6 +78,7 @@ arm_vent_s = [30, 58];  // span of the vertical vents along the face
 
 /* [Fasteners] */
 insert_d = 3.2;     // M2 heat-set insert
+collar = [4.6, 0.8];    // relief at the top of each boss for the plastic a melted insert pushes up
 m2_clear = 2.4;
 m2_head = 4.2;
 
@@ -221,13 +222,18 @@ arm_bosses = [for (x = [-boss_x, boss_x], s = [22, arm_len - 8]) [x, s]];
 foot_bosses = [for (x = [-boss_x, boss_x], y = [22, foot_len - 8]) [x, y]];
 boss_h = 6;
 
-module shell_bosses() {
-    for (p = arm_bosses) arm_frame() translate([p[0], arm_t - cover_t - fit - boss_h, p[1]]) rotate([-90, 0, 0])
-        difference() { cylinder(d = 5.4, h = boss_h); translate([0, 0, 2]) cylinder(d = insert_d, h = boss_h); }
-    for (p = foot_bosses) translate([p[0], p[1], wall - eps]) difference() {
-        cylinder(d = 5.4, h = foot_t - cover_t - fit - wall + eps);
-        translate([0, 0, 2]) cylinder(d = insert_d, h = foot_t);
+// A boss of height h whose top meets the cover's underside.
+module insert_boss(h) {
+    difference() {
+        cylinder(d = 5.4, h = h);
+        translate([0, 0, 2]) cylinder(d = insert_d, h = h);
+        translate([0, 0, h - collar[1]]) cylinder(d = collar[0], h = collar[1] + eps);
     }
+}
+
+module shell_bosses() {
+    for (p = arm_bosses) arm_frame() translate([p[0], arm_t - cover_t - boss_h, p[1]]) rotate([-90, 0, 0]) insert_boss(boss_h);
+    for (p = foot_bosses) translate([p[0], p[1], wall - eps]) insert_boss(foot_t - cover_t - wall + eps);
 }
 
 // ---------------------------------------------------------------- part 1
