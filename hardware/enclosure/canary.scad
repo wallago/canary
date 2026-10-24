@@ -1,17 +1,18 @@
-// Canary desk enclosure, in two printed parts.
+// Canary desk enclosure, in three printed parts.
 //
 // Side profile is a 75 degree angle: a screen arm leaning back 15 degrees and a
-// foot running back along the desk. The shell (part 1) is open on the two
-// inner faces of that angle; the cover (part 2) closes them. The screen screws
-// to the cover through the board's own M2 inserts, the X6 bolts to it with
-// nuts, its gas inlet facing out through a window.
+// foot running back along the desk. The shell is open on the two inner faces
+// of that angle; two covers close them. The screen screws to the screen cover
+// through the board's own brass M2 standoffs, which rest on the cover. The X6
+// bolts to the sensor cover with M2 nuts, its gas inlet facing out through a
+// window and its connector toward the screen.
 //
 // World axes: X across (right is +X seen from the front), Y depth (front 0,
 // back +), Z up from the desk. Screen-arm frame: s up the face, n into the
 // body, both from the front-bottom edge.
 //
 // Render one part with:  openscad -D 'part="shell"' -o shell.stl canary.scad
-// Parts: "assembly", "shell", "cover".
+// Parts: "assembly", "shell", "screen_cover", "sensor_cover".
 // Reference shapes for previews: "screen_ghost", "pcb_ghost", "x6_ghost".
 
 part = "assembly";
@@ -35,23 +36,29 @@ aperture_d = 46.5;      // active area is 45.68
 chamfer = 1.6;
 pcb_d = 47.86;
 board_edge = 4.5;       // glass front to PCB back, measured with calipers
-back_parts = 4.5;       // tallest part on the PCB back (connectors), estimated
+standoff_len = 4;       // the board's brass M2 standoffs, PCB back to tip, measured
 pcb_front_n = bezel + board_edge - 1.6;
 pcb_t = 1.6;
 
-// Screen arm thickness, normal to the face: bezel, board, its back parts,
-// 1 mm of air, then the cover.
-arm_t = bezel + board_edge + back_parts + 1 + cover_t;
+// Screen arm thickness, normal to the face: bezel, board, its brass
+// standoffs (their tips rest on the cover), then the cover.
+arm_t = bezel + board_edge + standoff_len + cover_t;
 // The board's M2 inserts, seen from the front, relative to the screen centre
 // (x, s). Read off the drawing to about 0.5 mm; check with calipers.
 board_holes = [[16.5, 14.5], [16.5, -14.6], [-22.5, 0]];
 
 /* [Sensor] */
-sensor = [25.5, 23];            // X6 board, x by y
+// X6 frame, as on its drawing's top view: x along the 25.5 side with the
+// connector at +x, y along the 23 side, from the board centre. The connector
+// points at the screen, so +x is world -Y.
+sensor = [25.5, 23];
 sensor_y = 41;                  // centre of the X6 along Y
-sensor_holes = [[-11, -9.75], [11, 9.75]];  // the two 2.2 mm holes, diagonal, from its centre
-standoff = 5.5;                 // cover underside to X6 board top: inlet sits just under the window
+sensor_holes = [[11, -9.5], [11, 9.5]];     // the two 2.2 mm (M2) holes, on the connector edge
+sensor_inlet = [-4.5, 0];       // gas element centre, read off the drawing
+sensor_conn = [8.25, 12.75, 11, 4.85];      // connector: x from, x to, width, height
+standoff = 1.5;                 // cover underside to X6 board top
 window = 13;                    // square window over the gas element
+plug_len = 8;                   // room for the plug beyond the board edge
 
 /* [Power] */
 usbc = [8.94, 3.26];    // USB-C receptacle shell, width by height
@@ -80,6 +87,14 @@ module arm_frame() { rotate([-T, 0, 0]) children(); }
 function back_y(z) = arm_t / cos(T) + z * tan(T);
 
 module z_above(z0) { translate([-100, -100, z0]) cube([200, 300, 200]); }
+
+// X6 frame on the foot: origin at the board centre, z = 0 on the board's top
+// face, which faces up into the cover.
+module x6_frame() { translate([0, sensor_y, foot_t - cover_t - standoff]) rotate([0, 0, -90]) children(); }
+
+// The two covers meet at the back face of the screen arm.
+module sensor_side() { intersection() { arm_frame() translate([-100, arm_t + fit, -50]) cube([200, 200, 300]); z_above(0); } }
+module screen_side() { arm_frame() translate([-100, -100, -50]) cube([200, 100 + arm_t, 300]); }
 
 // ---------------------------------------------------------------- envelope
 
@@ -182,9 +197,10 @@ module usb_slot() {
     translate([-6.5, 3, -1]) cube([13, 10, wall + 2]);
 }
 
-// Shell bosses for the cover screws: two near the top of the arm, two at the back of the foot.
-arm_bosses = [[width / 2 - wall - 2.6, arm_len - 8], [-(width / 2 - wall - 2.6), arm_len - 8]];
-foot_bosses = [[width / 2 - wall - 2.6, foot_len - 8], [-(width / 2 - wall - 2.6), foot_len - 8]];
+// Shell bosses for the cover screws: four for each cover, at its corners.
+boss_x = width / 2 - wall - 2.6;
+arm_bosses = [for (x = [-boss_x, boss_x], s = [22, arm_len - 8]) [x, s]];
+foot_bosses = [for (x = [-boss_x, boss_x], y = [22, foot_len - 8]) [x, y]];
 boss_h = 6;
 
 module shell_bosses() {
@@ -231,20 +247,17 @@ module cover() {
     difference() {
         union() {
             intersection() { cover_region(0); envelope(); }
-            // posts that hold the screen: M2 screws from outside into the board's inserts
-            for (h = board_holes) arm_frame() translate([h[0], 0, screen_s + h[1]]) rotate([-90, 0, 0])
-                translate([0, 0, pcb_front_n + pcb_t]) cylinder(d = 5, h = arm_t - cover_t - pcb_front_n - pcb_t + eps);
             // X6 standoffs under the foot segment
-            for (h = sensor_holes) translate([h[0], sensor_y + h[1], foot_t - cover_t - standoff])
-                cylinder(d = 4.6, h = standoff + eps);
+            x6_frame() for (h = sensor_holes) translate([h[0], h[1], 0]) cylinder(d = 4.6, h = standoff + eps);
         }
+        // M2 screws from outside straight into the screen board's brass standoffs
         for (h = board_holes) arm_frame() translate([h[0], 0, screen_s + h[1]]) rotate([-90, 0, 0]) {
-            translate([0, 0, pcb_front_n]) cylinder(d = m2_clear, h = arm_t);
+            translate([0, 0, arm_t - cover_t - 1]) cylinder(d = m2_clear, h = cover_t + 2);
             translate([0, 0, arm_t - 1.2]) cylinder(d1 = m2_clear, d2 = m2_head + 0.4, h = 1.2 + eps);
         }
-        for (h = sensor_holes) translate([h[0], sensor_y + h[1], 0]) {
+        x6_frame() for (h = sensor_holes) translate([h[0], h[1], -1]) {
             cylinder(d = m2_clear, h = 40);
-            translate([0, 0, foot_t - 1.2]) cylinder(d1 = m2_clear, d2 = m2_head + 0.4, h = 1.2 + eps);
+            translate([0, 0, 1 + standoff + cover_t - 1.2]) cylinder(d1 = m2_clear, d2 = m2_head + 0.4, h = 1.2 + eps);
         }
         for (p = arm_bosses) arm_frame() translate([p[0], arm_t - cover_t - 1, p[1]]) rotate([-90, 0, 0]) {
             cylinder(d = m2_clear, h = cover_t + 2);
@@ -254,8 +267,13 @@ module cover() {
             cylinder(d = m2_clear, h = cover_t + 2);
             translate([0, 0, cover_t + 1 - 1.2]) cylinder(d1 = m2_clear, d2 = m2_head + 0.4, h = 1.2 + eps);
         }
-        // window over the gas element
-        translate([-window / 2, sensor_y - window / 2, foot_t - cover_t - 1]) cube([window, window, cover_t + 2]);
+        x6_frame() {
+            // window over the gas element
+            translate([sensor_inlet[0] - window / 2, -window / 2, standoff - 1]) cube([window, window, cover_t + 2]);
+            // the connector rises through the cover at this height; leave it and the plug room
+            translate([sensor_conn[0] - 0.5, -(sensor_conn[2] + 1) / 2, standoff - 1])
+                cube([sensor_conn[1] - sensor_conn[0] + plug_len + 0.5, sensor_conn[2] + 1, cover_t + 2]);
+        }
         // foot vents, either side of the window
         for (x = [-19, -15, 15, 19]) translate([x - 0.8, sensor_y - 9, foot_t - cover_t - 1]) cube([1.6, 18, cover_t + 2]);
         // vertical arm vents, centred: cool air in low, board heat out high
@@ -263,6 +281,9 @@ module cover() {
             translate([x, arm_t - cover_t - 1, s]) rotate([-90, 0, 0]) cylinder(d = 2, h = cover_t + 2);
     }
 }
+
+module screen_cover() { intersection() { cover(); screen_side(); } }
+module sensor_cover() { intersection() { cover(); sensor_side(); } }
 
 // ---------------------------------------------------------------- reference
 
@@ -272,24 +293,30 @@ module screen_ghost() {
 
 module pcb_ghost() {
     arm_frame() translate([0, pcb_front_n, screen_s]) rotate([-90, 0, 0]) cylinder(d = pcb_d, h = pcb_t, $fn = 96);
-    translate([-sensor[0] / 2, sensor_y - sensor[1] / 2, foot_t - cover_t - standoff - 1.2]) cube([sensor[0], sensor[1], 1.2]);
+    x6_frame() translate([-sensor[0] / 2, -sensor[1] / 2, -1.2]) cube([sensor[0], sensor[1], 1.2]);
 }
 
 module x6_ghost() {
-    translate([-5.75, sensor_y - 5.75, foot_t - cover_t - standoff]) difference() {
-        cube([11.5, 11.5, 7.6]);
-        translate([5.75, 5.75, 7]) cylinder(d = 6, h = 1);
+    x6_frame() {
+        translate([sensor_inlet[0] - 5.75, -5.75, 0]) difference() {
+            cube([11.5, 11.5, 7.6]);
+            translate([5.75, 5.75, 7]) cylinder(d = 6, h = 1);
+        }
+        translate([sensor_conn[0], -sensor_conn[2] / 2, 0])
+            cube([sensor_conn[1] - sensor_conn[0], sensor_conn[2], sensor_conn[3]]);
     }
 }
 
 if (part == "shell") shell();
-else if (part == "cover") cover();
+else if (part == "screen_cover") screen_cover();
+else if (part == "sensor_cover") sensor_cover();
 else if (part == "screen_ghost") screen_ghost();
 else if (part == "pcb_ghost") pcb_ghost();
 else if (part == "x6_ghost") x6_ghost();
 else {
     color("#e8e6df") shell();
-    color("#d7d4ca") cover();
+    color("#d7d4ca") screen_cover();
+    color("#cfcabd") sensor_cover();
     color("#2c3a44") screen_ghost();
     color("#3f7a52") pcb_ghost();
     color("#555") x6_ghost();

@@ -1,9 +1,10 @@
 # Enclosure
 
-A 3D-printed desk stand for Canary, in two parts. Seen from the side it is a
-75° angle: the screen arm leans back 15° and a foot runs back along the desk.
-The shell is open on the two inner faces of that angle, and the cover closes
-them. The screen and the air sensor both mount on the cover.
+A 3D-printed desk stand for Canary, in three parts. Seen from the side it is
+a 75° angle: the screen arm leans back 15° and a foot runs back along the desk.
+The shell is open on the two inner faces of that angle, and two covers close
+them: one behind the screen, one over the foot. The screen mounts on the
+first, the air sensor on the second.
 
 Everything is in [`canary.scad`](canary.scad). Every dimension is a named
 variable at the top of the file. Units are millimetres.
@@ -16,10 +17,11 @@ variable at the top of the file. Units are millimetres.
 
 ## Parts
 
-| Part    | What it is                                                                                                                  |
-| ------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `shell` | Rounded body: screen opening, USB-C debug opening underneath, power socket sleeve at the back, floor vents under the sensor |
-| `cover` | Bent plate closing the inner faces: posts that hold the screen, standoffs for the X6, vertical vents, sensor window         |
+| Part           | What it is                                                                                                                  |
+| -------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `shell`        | Rounded body: screen opening, USB-C debug opening underneath, power socket sleeve at the back, floor vents under the sensor |
+| `screen_cover` | Plate behind the screen: three screw holes for the board, vertical vents                                                    |
+| `sensor_cover` | Plate over the foot: standoffs for the X6, window for its gas element, slot for its connector, vents                        |
 
 Export the STLs with `just stl`. They land in `target/enclosure/`.
 To export one part by hand:
@@ -33,11 +35,13 @@ reference shapes.
 
 ## Assembly
 
-- The screen screws to the cover through its own threaded M2 holes, from
-  outside the cover.
-- The X6 hangs under the foot of the cover on M2 bolts and nuts, component
-  side up, so its gas inlet sits in the window and faces out.
-- The cover screws to the shell with four M2 screws into heat-set inserts.
+- The screen's brass M2 standoffs rest on the screen cover, and three screws
+  go from outside the cover straight into them.
+- The X6 hangs under the sensor cover on 1.5 mm standoffs, component side up,
+  held by M2 bolts and nuts through its two 2.2 mm holes on the connector
+  edge. Its connector points at the screen. The gas element and the
+  connector come up through the cover.
+- Each cover screws to the shell with four M2 screws into heat-set inserts.
 - An internal wall keeps the sensor's chamber apart from the board's, so the
   ESP32's heat doesn't reach the sensor.
 - The PWR, BOOT and RST buttons and the TF slot are reached with the cover
@@ -45,9 +49,9 @@ reference shapes.
 
 ## Fasteners and extras
 
-- 3 × M2 countersunk screws for the screen, about 10 mm long
-- 2 × M2×12 countersunk bolts and 2 × M2 nuts for the X6
-- 4 × M2×6 countersunk screws and 4 × M2 heat-set inserts for the cover
+- 3 × M2×6 countersunk screws for the screen
+- 2 × M2×8 countersunk bolts and 2 × M2 nuts for the X6
+- 8 × M2×6 countersunk screws and 8 × M2 heat-set inserts for the covers
 - 4 × 8 mm adhesive rubber feet
 - 1 female USB-C receptacle, glued into the sleeve at the back
 
@@ -62,7 +66,7 @@ into the `BAT` connector; it expects a single 3.7 V lithium cell.
 
 ## Still to confirm
 
-- `board_edge` (4.5) was read off a caliper photo; `back_parts` (4.5) is an
-  estimate of the tallest part on the back of the board.
-- The M2 hole centres on both boards (`board_holes`, `sensor_holes`) were
-  read off the drawings to about 0.5 mm.
+- `board_edge` (4.5) was read off a caliper photo.
+- The M2 hole centres on both boards (`board_holes`, `sensor_holes`) and the
+  X6's gas element and connector positions were read off the drawings to
+  about 0.5 mm.
