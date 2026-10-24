@@ -52,9 +52,10 @@ board_holes = [[16.5, 14.5], [16.5, -14.6], [-21, 0]];
 // connector at +x, y along the 23 side, from the board centre. The connector
 // points at the screen, so +x is world -Y.
 sensor = [25.5, 23];
-sensor_y = 41;                  // centre of the X6 along Y
+sensor_y = 40.5;                // centre of the X6 along Y
+vent_y = 41;                    // centre of the foot vents along Y
 sensor_holes = [[11, -9.5], [11, 9.5]];     // the two 2.2 mm (M2) holes, on the connector edge
-sensor_inlet = [-4.5, 0];       // gas element centre, read off the drawing
+sensor_inlet = [-5, 0];         // gas element centre, from a test fit
 sensor_conn = [8.25, 12.75, 11, 4.85];      // connector: x from, x to, width, height
 standoff = 4;                   // cover underside to X6 board top
 window = 13;                    // square window over the gas element
@@ -228,7 +229,7 @@ module shell() {
         aperture();
         usb_slot();
         // floor vents under the sensor
-        for (x = [-10 : 4 : 10]) translate([x - 0.8, sensor_y - 10, -1]) cube([1.6, 20, wall + 2]);
+        for (x = [-10 : 4 : 10]) translate([x - 0.8, vent_y - 10, -1]) cube([1.6, 20, wall + 2]);
         usbc_hole();
         // power and sensor leads through the divider to the board
         intersection() {
@@ -275,7 +276,7 @@ module cover() {
                 cube([sensor_conn[1] - sensor_conn[0] + plug_len + 0.5, sensor_conn[2] + 1, sensor_conn[3] + 0.3 - standoff + 1]);
         }
         // foot vents, either side of the window
-        for (x = [-19, -15, 15, 19]) translate([x - 0.8, sensor_y - 9, foot_t - cover_t - 1]) cube([1.6, 18, cover_t + 2]);
+        for (x = [-19, -15, 15, 19]) translate([x - 0.8, vent_y - 9, foot_t - cover_t - 1]) cube([1.6, 18, cover_t + 2]);
         // vertical arm vents, centred: cool air in low, board heat out high
         for (x = [-7.5, -2.5, 2.5, 7.5]) arm_frame() hull() for (s = arm_vent_s)
             translate([x, arm_t - cover_t - 1, s]) rotate([-90, 0, 0]) cylinder(d = 2, h = cover_t + 2);
