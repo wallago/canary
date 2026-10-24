@@ -56,7 +56,7 @@ sensor_y = 41;                  // centre of the X6 along Y
 sensor_holes = [[11, -9.5], [11, 9.5]];     // the two 2.2 mm (M2) holes, on the connector edge
 sensor_inlet = [-4.5, 0];       // gas element centre, read off the drawing
 sensor_conn = [8.25, 12.75, 11, 4.85];      // connector: x from, x to, width, height
-standoff = 1.5;                 // cover underside to X6 board top
+standoff = 4;                   // cover underside to X6 board top
 window = 13;                    // square window over the gas element
 plug_len = 8;                   // room for the plug beyond the board edge
 
@@ -270,9 +270,9 @@ module cover() {
         x6_frame() {
             // window over the gas element
             translate([sensor_inlet[0] - window / 2, -window / 2, standoff - 1]) cube([window, window, cover_t + 2]);
-            // the connector rises through the cover at this height; leave it and the plug room
+            // the connector is taller than the standoffs: a blind pocket under the cover for it and the plug
             translate([sensor_conn[0] - 0.5, -(sensor_conn[2] + 1) / 2, standoff - 1])
-                cube([sensor_conn[1] - sensor_conn[0] + plug_len + 0.5, sensor_conn[2] + 1, cover_t + 2]);
+                cube([sensor_conn[1] - sensor_conn[0] + plug_len + 0.5, sensor_conn[2] + 1, sensor_conn[3] + 0.3 - standoff + 1]);
         }
         // foot vents, either side of the window
         for (x = [-19, -15, 15, 19]) translate([x - 0.8, sensor_y - 9, foot_t - cover_t - 1]) cube([1.6, 18, cover_t + 2]);

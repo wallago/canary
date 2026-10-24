@@ -21,7 +21,7 @@ variable at the top of the file. Units are millimetres.
 | -------------- | --------------------------------------------------------------------------------------------------------------------------- |
 | `shell`        | Rounded body: screen opening, USB-C debug opening underneath, power socket sleeve at the back, floor vents under the sensor |
 | `screen_cover` | Plate behind the screen: three screw holes for the board, vertical vents                                                    |
-| `sensor_cover` | Plate over the foot: standoffs for the X6, window for its gas element, slot for its connector, vents                        |
+| `sensor_cover` | Plate over the foot: standoffs for the X6, window for its gas element, pocket for its connector, vents                      |
 
 Export the STLs with `just stl`. They land in `target/enclosure/`.
 To export one part by hand:
@@ -37,10 +37,10 @@ reference shapes.
 
 - The screen's brass M2 standoffs rest on the screen cover, and three screws
   go from outside the cover straight into them.
-- The X6 hangs under the sensor cover on 1.5 mm standoffs, component side up,
+- The X6 hangs under the sensor cover on 4 mm standoffs, component side up,
   held by M2 bolts and nuts through its two 2.2 mm holes on the connector
-  edge. Its connector points at the screen. The gas element and the
-  connector come up through the cover.
+  edge. Its connector points at the screen and sits in a pocket under the
+  cover. The gas element comes up through the window.
 - Each cover screws to the shell with four M2 screws into heat-set inserts.
 - An internal wall keeps the sensor's chamber apart from the board's, so the
   ESP32's heat doesn't reach the sensor.
@@ -50,7 +50,7 @@ reference shapes.
 ## Fasteners and extras
 
 - 3 × M2×6 countersunk screws for the screen
-- 2 × M2×8 countersunk bolts and 2 × M2 nuts for the X6
+- 2 × M2×10 countersunk bolts and 2 × M2 nuts for the X6
 - 8 × M2×6 countersunk screws and 8 × M2 heat-set inserts for the covers
 - 4 × 8 mm adhesive rubber feet
 - 1 female USB-C receptacle, glued into the sleeve at the back
