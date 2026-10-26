@@ -22,7 +22,7 @@ part = "assembly";
 /* [Overall] */
 tilt = 15;          // screen lean back from vertical, degrees
 width = 58;
-arm_len = 72;       // screen arm, along the face
+arm_len = 76;       // screen arm, along the face
 foot_len = 60;      // foot, front to back
 foot_t = 16;        // foot height
 wall = 2;
@@ -33,7 +33,7 @@ fit = 0.4;          // cover-to-shell clearance per side
 bezel = 1.6;
 
 /* [Screen board] */
-screen_s = 42;          // screen centre along the face
+screen_s = 46;          // screen centre along the face
 aperture_d = 46.5;      // active area is 45.68
 chamfer = 1.6;
 pcb_d = 47.86;
@@ -76,7 +76,7 @@ plug_recess = [13, 7.5, 1.2];       // outside pocket so the plug's overmould re
 solder_relief = 0.6;    // floor pocket under the PCB for solder joints
 
 /* [Vents] */
-arm_vent_s = [30, 58];  // span of the vertical vents along the face
+arm_vent_s = [34, 62];  // span of the vertical vents along the face
 
 /* [Fasteners] */
 insert_d = 3.2;     // M2 heat-set insert
