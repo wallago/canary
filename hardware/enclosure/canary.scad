@@ -52,10 +52,10 @@ board_holes = [[16.5, 14.5], [16.5, -14.6], [-21, 0]];
 // connector at +x, y along the 23 side, from the board centre. The connector
 // points at the screen, so +x is world -Y.
 sensor = [25.5, 23];
-sensor_y = 40.5;                // centre of the X6 along Y
+sensor_y = 41;                  // centre of the X6 along Y
 vent_y = 41;                    // centre of the foot vents along Y
 sensor_holes = [[11, -9.5], [11, 9.5]];     // the two 2.2 mm (M2) holes, on the connector edge
-sensor_inlet = [-5, 0];         // gas element centre, from a test fit
+sensor_inlet = [-4.5, 0];       // gas element centre, from a test fit
 sensor_conn = [8.25, 12.75, 11, 4.85];      // connector: x from, x to, width, height
 standoff = 4;                   // cover underside to X6 board top
 window = 13;                    // square window over the gas element
@@ -143,20 +143,20 @@ module arm_inner_outline(g = 0) {
         square([width - 2 * face_r, arm_len + 8 - 2 * face_r], center = true);
 }
 
-// The cover's region, grown by `g` on its inner edges.
+// The cover's region, grown by `g` on every side but its outer face.
 module cover_region(g = 0, open = 0) {
-    lat = width / 2 - wall - g;
+    lat = width / 2 - wall + g;
     intersection() {
         union() {
             // screen-arm segment
             intersection() {
                 arm_frame() translate([0, arm_t - cover_t - g, 0]) rotate([-90, 0, 0]) linear_extrude(cover_t + g + open)
-                    arm_inner_outline(g);
+                    arm_inner_outline(-g);
                 z_above(foot_t - cover_t - g);
             }
             // foot segment
             difference() {
-                translate([-lat, 0, foot_t - cover_t - g]) cube([2 * lat, foot_len - wall - g, cover_t + g + open]);
+                translate([-lat, 0, foot_t - cover_t - g]) cube([2 * lat, foot_len - wall + g, cover_t + g + open]);
                 arm_frame() translate([-100, -100, -50]) cube([200, 100 + arm_t - cover_t - g, 300]);
             }
         }
