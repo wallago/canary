@@ -39,12 +39,13 @@ chamfer = 1.6;
 pcb_d = 47.86;
 board_edge = 4.5;       // glass front to PCB back, measured with calipers
 standoff_len = 4;       // the board's brass M2 standoffs, PCB back to tip, measured
-pcb_front_n = bezel + board_edge - 1.6;
+screen_gap = 1;         // glass to the inside of the face, so the face doesn't press the panel
+pcb_front_n = bezel + screen_gap + board_edge - 1.6;
 pcb_t = 1.6;
 
-// Screen arm thickness, normal to the face: bezel, board, its brass
+// Screen arm thickness, normal to the face: bezel, a gap, board, its brass
 // standoffs (their tips rest on the cover), then the cover.
-arm_t = bezel + board_edge + standoff_len + cover_t;
+arm_t = bezel + screen_gap + board_edge + standoff_len + cover_t;
 // The board's M2 inserts, seen from the front, relative to the screen centre
 // (x, s). Read off the drawing; the single hole moved 1.5 mm in after a test fit.
 board_holes = [[16.5, 14.5], [16.5, -14.6], [-21, 0]];
@@ -344,7 +345,7 @@ module sensor_cover() { intersection() { cover(); sensor_side(); } }
 // ---------------------------------------------------------------- reference
 
 module screen_ghost() {
-    arm_frame() translate([0, bezel, screen_s]) rotate([-90, 0, 0]) cylinder(d = 48.08, h = pcb_front_n - bezel, $fn = 96);
+    arm_frame() translate([0, bezel + screen_gap, screen_s]) rotate([-90, 0, 0]) cylinder(d = 48.08, h = pcb_front_n - bezel - screen_gap, $fn = 96);
 }
 
 module pcb_ghost() {

@@ -41,7 +41,8 @@ reference shapes.
 ## Assembly
 
 - The screen's brass M2 standoffs rest on the screen cover, and three screws
-  go from outside the cover straight into them.
+  go from outside the cover straight into them. The glass sits 1 mm behind
+  the face, so the face never presses on the panel.
 - The X6 hangs under the sensor cover on 4 mm standoffs, component side up,
   held by M2 bolts and nuts through its two 2.2 mm holes on the connector
   edge. Its connector points at the screen and sits in a pocket under the
