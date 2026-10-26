@@ -53,9 +53,10 @@ reference shapes.
   inserts before joining the halves.
 - Inside, the screen arm and the foot are one open space, with no wall
   between the board and the sensor.
-- The USB-C breakout lies on the floor of the foot, under the X6, its
-  receptacle in the port at the back. Two M3 bolts from below hold it, with
-  nuts on top.
+- The USB-C breakout sits on two bosses 1 mm above the floor of the foot,
+  under the X6, its receptacle in the port at the back. Two M3 screws from
+  above go into heat-set inserts in the bosses, whose holes run through the
+  floor.
 - The PWR, BOOT and RST buttons and the TF slot are reached with the cover
   off.
 
@@ -67,8 +68,8 @@ reference shapes.
 - 2 × M2×6 countersunk screws and 2 × M2 heat-set inserts to join the shell
   halves
 - 4 × 8 mm adhesive rubber feet
-- 1 USB-C female breakout, 21.6 × 12.7 mm, and 2 × M3×6 countersunk bolts
-  and 2 × M3 nuts for it
+- 1 USB-C female breakout, 21.6 × 12.7 mm, and 2 × M3×4 screws and 2 × M3
+  heat-set inserts (Ø4.5, 3 mm long) for it
 - 1 short male USB-C pigtail, right-angle, into the board's own port
 
 ## Power
@@ -85,5 +86,7 @@ expects a single 3.7 V lithium cell.
 - The M2 hole centres on both boards (`board_holes`, `sensor_holes`) and the
   X6's gas element and connector positions were read off the drawings to
   about 0.5 mm.
-- The breakout's hole centres (`breakout_holes`) and how far its receptacle
-  overhangs the PCB (`usbc_overhang`) were read off a product photo.
+- The breakout's hole centres (`breakout_holes`) were read off a product
+  photo and widened 0.5 mm after a test fit. How far its receptacle
+  overhangs the PCB (`usbc_overhang`) was read off the same photo.
+- The breakout's receptacle clears the X6 board above it by about 0.5 mm.

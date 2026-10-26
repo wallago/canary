@@ -66,16 +66,17 @@ window = 13;                    // square window over the gas element
 plug_len = 8;                   // room for the plug beyond the board edge
 
 /* [Power] */
-// Power comes in through a red USB-C breakout lying on the floor under the
-// X6, its receptacle facing out of the back wall. Breakout frame: x across,
-// y from the receptacle edge of its PCB into the foot, z up from the floor.
+// Power comes in through a red USB-C breakout on two bosses above the floor,
+// under the X6, its receptacle facing out of the back wall. Breakout frame:
+// x across, y from the receptacle edge of its PCB into the foot, z up from
+// the PCB's underside.
 breakout = [21.6, 12.7, 1.6];       // PCB: along x, along y, thickness
-breakout_holes = [[-7.5, 3.3], [7.5, 3.3]];     // its two holes, read off a photo; check with calipers
+breakout_holes = [[-7.75, 3.3], [7.75, 3.3]];   // its two holes, read off a photo, then 0.5 mm wider after a test fit
 usbc = [8.94, 3.26];    // receptacle shell, width by height, on top of the PCB
 usbc_fit = 0.3;         // clearance per side in the back wall
 usbc_overhang = 0.8;    // receptacle front past the PCB edge, estimated
 plug_recess = [13, 7.5, 1.2];       // outside pocket so the plug's overmould reaches the receptacle
-solder_relief = 0.6;    // floor pocket under the PCB for solder joints
+breakout_lift = 1;      // PCB above the floor, so the bosses are as tall as the inserts
 
 /* [Vents] */
 arm_vent_s = [34, 62];  // span of the vertical vents along the face
@@ -86,8 +87,9 @@ boss_d = 7;         // about twice the insert's Ø3.5, so a hot iron doesn't sof
 collar = [4.6, 0.8];    // relief at the top of each boss for the plastic a melted insert pushes up
 m2_clear = 2.4;
 m2_head = 4.2;
-m3_clear = 3.4;     // the USB-C breakout's screws
-m3_head = 6;
+m3_insert = [4.2, 3];       // the USB-C breakout's M3 heat-set inserts: hole for the Ø4.5, length
+m3_collar = [5.6, 0.8];
+m3_boss_d = 9;
 
 $fn = 48;
 eps = 0.01;
@@ -194,7 +196,7 @@ module aperture() {
 }
 
 // Power in: the breakout's receptacle edge sits against the inside of the back wall.
-module breakout_frame() { translate([0, foot_len - wall - fit, wall]) mirror([0, 1, 0]) children(); }
+module breakout_frame() { translate([0, foot_len - wall - fit, wall + breakout_lift]) mirror([0, 1, 0]) children(); }
 
 module stadium(w, h, len) {
     r = h / 2;
@@ -202,24 +204,25 @@ module stadium(w, h, len) {
 }
 
 module usbc_port() {
-    zc = wall + breakout[2] + usbc[1] / 2;
+    zc = wall + breakout_lift + breakout[2] + usbc[1] / 2;
     translate([0, foot_len + 1, zc]) {
         stadium(usbc[0] + 2 * usbc_fit, usbc[1] + 2 * usbc_fit, wall + fit + 2);
         stadium(plug_recess[0], plug_recess[1], 1 + plug_recess[2]);
     }
 }
 
-// The breakout rests on the floor, held by two M3 bolts from below with nuts on top.
-module breakout_seat() {
-    breakout_frame() {
-        difference() {
-            translate([-breakout[0] / 2 - fit, -fit, -solder_relief]) cube([breakout[0] + 2 * fit, breakout[1] + 2 * fit, solder_relief + eps]);
-            for (h = breakout_holes) translate([h[0], h[1], -1]) cylinder(d = 6, h = 2);
-        }
-        for (h = breakout_holes) translate([h[0], h[1], -wall - 1]) {
-            cylinder(d = m3_clear, h = wall + 2);
-            cylinder(d1 = m3_head + 0.4, d2 = m3_clear, h = 1 + 1.5);
-        }
+// The breakout sits on two bosses, held by M3 screws from above into
+// heat-set inserts. Each boss is as tall as its insert, floor included, so
+// the hole runs through the floor.
+module breakout_bosses() {
+    breakout_frame() for (h = breakout_holes) translate([h[0], h[1], -breakout_lift - wall / 2])
+        cylinder(d = m3_boss_d, h = breakout_lift + wall / 2);
+}
+
+module breakout_inserts() {
+    breakout_frame() for (h = breakout_holes) translate([h[0], h[1], 0]) {
+        translate([0, 0, -m3_insert[1] - 1]) cylinder(d = m3_insert[0], h = m3_insert[1] + 1 + eps);
+        translate([0, 0, -m3_collar[1]]) cylinder(d = m3_collar[0], h = m3_collar[1] + eps);
     }
 }
 
@@ -255,12 +258,13 @@ module shell() {
                 cover_region(fit, 10);
             }
             intersection() { shell_bosses(); envelope(); }
+            intersection() { breakout_bosses(); envelope(); }
         }
         aperture();
         // floor vents under the sensor, clear of the breakout
         for (x = [-10 : 4 : 10]) translate([x - 0.8, vent_y - 10, -1]) cube([1.6, 13, wall + 2]);
         usbc_port();
-        breakout_seat();
+        breakout_inserts();
         // rubber feet
         for (x = [-width / 2 + 8, width / 2 - 8], y = [10, foot_len - 8])
             translate([x, y, -eps]) cylinder(d = 8.5, h = 0.8);
