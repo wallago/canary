@@ -1,10 +1,11 @@
 # Enclosure
 
-A 3D-printed desk stand for Canary, in three parts. Seen from the side it is
+A 3D-printed desk stand for Canary, in four parts. Seen from the side it is
 a 75° angle: the screen arm leans back 15° and a foot runs back along the desk.
 The shell is open on the two inner faces of that angle, and two covers close
 them: one behind the screen, one over the foot. The screen mounts on the
-first, the air sensor on the second.
+first, the air sensor on the second. The shell prints as two halves that
+screw together from underneath.
 
 Everything is in [`canary.scad`](canary.scad). Every dimension is a named
 variable at the top of the file. Units are millimetres.
@@ -19,15 +20,19 @@ variable at the top of the file. Units are millimetres.
 
 | Part           | What it is                                                                                                                  |
 | -------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `shell`        | Rounded body: screen opening, USB-C port at the back, seat for the USB-C breakout, floor vents under the sensor            |
+| `shell_arm`    | Front half of the body: screen opening, two blocks reaching back over the foot floor for the joint screws                   |
+| `shell_foot`   | Back half of the body: USB-C port at the back, seat for the USB-C breakout, floor vents under the sensor                    |
 | `screen_cover` | Plate behind the screen: three screw holes for the board, vertical vents                                                    |
 | `sensor_cover` | Plate over the foot: standoffs for the X6, window for its gas element, pocket for its connector, vents                      |
+
+Print `shell_arm` face-down and `shell_foot` floor-down; neither needs
+support.
 
 Export the STLs with `just stl`. They land in `target/enclosure/`.
 To export one part by hand:
 
 ```sh
-nix run nixpkgs#openscad -- -D 'part="shell"' -o shell.stl hardware/enclosure/canary.scad
+nix run nixpkgs#openscad -- -D 'part="shell_arm"' -o shell_arm.stl hardware/enclosure/canary.scad
 ```
 
 Open the file without `-D` to see the assembly, with the two boards shown as
@@ -42,6 +47,9 @@ reference shapes.
   edge. Its connector points at the screen and sits in a pocket under the
   cover. The gas element comes up through the window.
 - Each cover screws to the shell with four M2 screws into heat-set inserts.
+- The shell halves join with two M2 screws from underneath, up through the
+  foot floor into heat-set inserts in the arm half's blocks. Fit those
+  inserts before joining the halves.
 - Inside, the screen arm and the foot are one open space, with no wall
   between the board and the sensor.
 - The USB-C breakout lies on the floor of the foot, under the X6, its
@@ -55,6 +63,8 @@ reference shapes.
 - 3 × M2×6 countersunk screws for the screen
 - 2 × M2×10 countersunk bolts and 2 × M2 nuts for the X6
 - 8 × M2×6 countersunk screws and 8 × M2 heat-set inserts for the covers
+- 2 × M2×6 countersunk screws and 2 × M2 heat-set inserts to join the shell
+  halves
 - 4 × 8 mm adhesive rubber feet
 - 1 USB-C female breakout, 21.6 × 12.7 mm, and 2 × M2×6 countersunk bolts
   and 2 × M2 nuts for it

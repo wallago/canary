@@ -1,18 +1,20 @@
-// Canary desk enclosure, in three printed parts.
+// Canary desk enclosure, in four printed parts.
 //
 // Side profile is a 75 degree angle: a screen arm leaning back 15 degrees and a
 // foot running back along the desk. The shell is open on the two inner faces
 // of that angle; two covers close them. The screen screws to the screen cover
 // through the board's own brass M2 standoffs, which rest on the cover. The X6
 // bolts to the sensor cover with M2 nuts, its gas inlet facing out through a
-// window and its connector toward the screen.
+// window and its connector toward the screen. The shell prints as two halves,
+// split where the covers meet and screwed together from underneath.
 //
 // World axes: X across (right is +X seen from the front), Y depth (front 0,
 // back +), Z up from the desk. Screen-arm frame: s up the face, n into the
 // body, both from the front-bottom edge.
 //
 // Render one part with:  openscad -D 'part="shell"' -o shell.stl canary.scad
-// Parts: "assembly", "shell", "screen_cover", "sensor_cover".
+// Parts: "assembly", "shell_arm", "shell_foot", "screen_cover", "sensor_cover",
+// or "shell" in one piece.
 // Reference shapes for previews: "screen_ghost", "pcb_ghost", "x6_ghost".
 
 part = "assembly";
@@ -221,7 +223,6 @@ module breakout_seat() {
 boss_x = width / 2 - wall - 2.6;
 arm_bosses = [for (x = [-boss_x, boss_x], s = [22, arm_len - 8]) [x, s]];
 foot_bosses = [for (x = [-boss_x, boss_x], y = [22, foot_len - 8]) [x, y]];
-boss_h = 6;
 
 // A boss of height h whose top meets the cover's underside.
 module insert_boss(h) {
@@ -233,7 +234,8 @@ module insert_boss(h) {
 }
 
 module shell_bosses() {
-    for (p = arm_bosses) arm_frame() translate([p[0], arm_t - cover_t - boss_h, p[1]]) rotate([-90, 0, 0]) insert_boss(boss_h);
+    // the arm bosses run down to the inside of the face so they print without support
+    for (p = arm_bosses) arm_frame() translate([p[0], bezel - eps, p[1]]) rotate([-90, 0, 0]) insert_boss(arm_t - cover_t - bezel + eps);
     for (p = foot_bosses) translate([p[0], p[1], wall - eps]) insert_boss(foot_t - cover_t - wall + eps);
 }
 
@@ -260,6 +262,38 @@ module shell() {
             translate([x, y, -eps]) cylinder(d = 8.5, h = 0.8);
     }
 }
+
+// The shell's two halves, split where the covers meet so the arm prints
+// face-down and the foot floor-down. A block on the arm half, on each side,
+// runs from the front wall back over the foot floor; an M2 screw from
+// underneath goes up through the floor into an insert in it.
+joint_x = 14;
+joint_y = 17.5;     // screw centre, behind the split
+joint_h = 7;        // block height above the floor
+
+module joint_blocks() {
+    for (x = [-joint_x, joint_x]) difference() {
+        intersection() {
+            translate([x - boss_d / 2, 0, wall]) cube([boss_d, joint_y + boss_d / 2, joint_h]);
+            envelope();
+        }
+        // insert from below, with relief for the collar it pushes up
+        translate([x, joint_y, wall - 1]) {
+            cylinder(d = insert_d, h = 1 + joint_h - 2);
+            cylinder(d = collar[0], h = 1 + collar[1]);
+        }
+    }
+}
+
+module joint_screws() {
+    for (x = [-joint_x, joint_x]) translate([x, joint_y, -1]) {
+        cylinder(d = m2_clear, h = wall + 2);
+        cylinder(d1 = m2_head + 0.4, d2 = m2_clear, h = 1 + 1.2);
+    }
+}
+
+module shell_arm() { intersection() { shell(); screen_side(); } joint_blocks(); }
+module shell_foot() { difference() { shell(); screen_side(); joint_screws(); } }
 
 // ---------------------------------------------------------------- part 2
 
@@ -332,13 +366,16 @@ module x6_ghost() {
 }
 
 if (part == "shell") shell();
+else if (part == "shell_arm") shell_arm();
+else if (part == "shell_foot") shell_foot();
 else if (part == "screen_cover") screen_cover();
 else if (part == "sensor_cover") sensor_cover();
 else if (part == "screen_ghost") screen_ghost();
 else if (part == "pcb_ghost") pcb_ghost();
 else if (part == "x6_ghost") x6_ghost();
 else {
-    color("#e8e6df") shell();
+    color("#e8e6df") shell_arm();
+    color("#e2dfd6") shell_foot();
     color("#d7d4ca") screen_cover();
     color("#cfcabd") sensor_cover();
     color("#2c3a44") screen_ghost();
