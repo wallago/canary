@@ -47,8 +47,9 @@ pcb_t = 1.6;
 // standoffs (their tips rest on the cover), then the cover.
 arm_t = bezel + screen_gap + board_edge + standoff_len + cover_t;
 // The board's M2 inserts, seen from the front, relative to the screen centre
-// (x, s). Read off the drawing; the single hole moved 1.5 mm in after a test fit.
-board_holes = [[16.5, 14.5], [16.5, -14.6], [-21, 0]];
+// (x, s). Read off the drawing; the single hole moved 1.5 mm in after a test fit,
+// then all three moved 0.5 mm left and 0.3 mm down to centre the panel in the window.
+board_holes = [[16, 14.2], [16, -14.9], [-21.5, -0.3]];
 
 /* [Sensor] */
 // X6 frame, as on its drawing's top view: x along the 25.5 side with the
