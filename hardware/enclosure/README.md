@@ -53,7 +53,7 @@ reference shapes.
 - Inside, the screen arm and the foot are one open space, with no wall
   between the board and the sensor.
 - The USB-C breakout lies on the floor of the foot, under the X6, its
-  receptacle in the port at the back. Two M2 bolts from below hold it, with
+  receptacle in the port at the back. Two M3 bolts from below hold it, with
   nuts on top.
 - The PWR, BOOT and RST buttons and the TF slot are reached with the cover
   off.
@@ -66,8 +66,8 @@ reference shapes.
 - 2 × M2×6 countersunk screws and 2 × M2 heat-set inserts to join the shell
   halves
 - 4 × 8 mm adhesive rubber feet
-- 1 USB-C female breakout, 21.6 × 12.7 mm, and 2 × M2×6 countersunk bolts
-  and 2 × M2 nuts for it
+- 1 USB-C female breakout, 21.6 × 12.7 mm, and 2 × M3×6 countersunk bolts
+  and 2 × M3 nuts for it
 - 1 short male USB-C pigtail, right-angle, into the board's own port
 
 ## Power

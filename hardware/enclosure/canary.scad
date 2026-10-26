@@ -84,6 +84,8 @@ boss_d = 7;         // about twice the insert's Ø3.5, so a hot iron doesn't sof
 collar = [4.6, 0.8];    // relief at the top of each boss for the plastic a melted insert pushes up
 m2_clear = 2.4;
 m2_head = 4.2;
+m3_clear = 3.4;     // the USB-C breakout's screws
+m3_head = 6;
 
 $fn = 48;
 eps = 0.01;
@@ -205,16 +207,16 @@ module usbc_port() {
     }
 }
 
-// The breakout rests on the floor, held by two M2 bolts from below with nuts on top.
+// The breakout rests on the floor, held by two M3 bolts from below with nuts on top.
 module breakout_seat() {
     breakout_frame() {
         difference() {
             translate([-breakout[0] / 2 - fit, -fit, -solder_relief]) cube([breakout[0] + 2 * fit, breakout[1] + 2 * fit, solder_relief + eps]);
-            for (h = breakout_holes) translate([h[0], h[1], -1]) cylinder(d = 5, h = 2);
+            for (h = breakout_holes) translate([h[0], h[1], -1]) cylinder(d = 6, h = 2);
         }
         for (h = breakout_holes) translate([h[0], h[1], -wall - 1]) {
-            cylinder(d = m2_clear, h = wall + 2);
-            cylinder(d1 = m2_head + 0.4, d2 = m2_clear, h = 1 + 1.2);
+            cylinder(d = m3_clear, h = wall + 2);
+            cylinder(d1 = m3_head + 0.4, d2 = m3_clear, h = 1 + 1.5);
         }
     }
 }
