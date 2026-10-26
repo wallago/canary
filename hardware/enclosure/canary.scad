@@ -78,6 +78,7 @@ arm_vent_s = [30, 58];  // span of the vertical vents along the face
 
 /* [Fasteners] */
 insert_d = 3.2;     // M2 heat-set insert
+boss_d = 7;         // about twice the insert's Ø3.5, so a hot iron doesn't soften the wall
 collar = [4.6, 0.8];    // relief at the top of each boss for the plastic a melted insert pushes up
 m2_clear = 2.4;
 m2_head = 4.2;
@@ -225,7 +226,7 @@ boss_h = 6;
 // A boss of height h whose top meets the cover's underside.
 module insert_boss(h) {
     difference() {
-        cylinder(d = 5.4, h = h);
+        cylinder(d = boss_d, h = h);
         translate([0, 0, 2]) cylinder(d = insert_d, h = h);
         translate([0, 0, h - collar[1]]) cylinder(d = collar[0], h = collar[1] + eps);
     }
