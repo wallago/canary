@@ -15,4 +15,7 @@ pub mod help;
 /// Common types that can be glob-imported for convenience.
 pub mod prelude;
 
+/// Comfort and air verdicts drawn from the readings.
+pub mod advice;
+
 pub mod data;

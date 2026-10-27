@@ -1,9 +1,14 @@
 import { Theme } from "theme.slint";
-import { Header } from "header.slint";
-import { Temperature } from "temperature.slint";
-import { Humidity } from "humidity.slint";
-import { IAQ } from "iaq.slint";
-import { Gaz } from "gaz.slint";
+import { ComfortPage } from "comfort.slint";
+import { AirPage } from "air.slint";
+import { DetailsPage } from "details.slint";
+import { AlertPage } from "alert.slint";
+
+// How the room feels, as `canary_core::advice::Comfort` judges it.
+export enum Comfort { comfortable, too-cold, too-warm, too-dry, too-humid }
+
+// What needs doing, as `canary_core::advice::Alert` picks it.
+export enum Alert { none, co, hcho, tvoc, air }
 
 export component EnvironmentDisplay inherits Window {
     width: 360px;
@@ -21,73 +26,73 @@ export component EnvironmentDisplay inherits Window {
     in property <float> co: 0.0;
     in property <float> hcho: 0.0;
     in property <float> tvoc: 0.0;
-    in property <string> iaq: "hazardous";
+    in property <string> iaq: "good";
 
-    in property <string> sensor-status: "X6 CONNECTED";
+    in property <Comfort> comfort: Comfort.comfortable;
+    in property <Alert> alert: Alert.none;
 
-    // ═════════════════════════════════════════════
-    // Outer display ring
-    // ═════════════════════════════════════════════
+    // ─────────────────────────────────────────────
+    // Rotation: 0 comfort, 1 air quality, 2 details
+    // ─────────────────────────────────────────────
 
-    Rectangle {
-        x: 0px;
-        y: 0px;
-        width: 360px;
-        height: 360px;
+    property <int> page: 0;
 
-        border-radius: 180px;
-        background: transparent;
-
-        border-width: 3px;
-        border-color: #2d3035;
+    Timer {
+        interval: 15s;
+        // Holds still while an alert is up; picks up where it left off after.
+        running: root.alert == Alert.none;
+        triggered => {
+            root.page = mod(root.page + 1, 3);
+        }
     }
 
-    Header {
-        x: 0px;
-        y: 0px;
-
-        status: sensor-status;
-    }
-
-    Temperature {
-        x: 170px;
-        y: 119px;
-
-        height: 58px;
-        width: 200px;
-
+    if root.alert == Alert.none && root.page == 0: ComfortPage {
         temperature: root.temperature;
-    }
-
-    Humidity {
-        x: 170px;
-        y: 200px;
-
-        height: 58px;
-        width: 200px;
-
         humidity: root.humidity;
+        ok: root.comfort == Comfort.comfortable;
+        verdict: root.comfort == Comfort.too-cold ? "TOO COLD"
+            : root.comfort == Comfort.too-warm ? "TOO WARM"
+            : root.comfort == Comfort.too-dry ? "TOO DRY"
+            : root.comfort == Comfort.too-humid ? "TOO HUMID"
+            : "COMFORTABLE";
     }
 
-    Gaz {
-        x: 0px;
-        y: 127px;
+    if root.alert == Alert.none && root.page == 1: AirPage {
+        iaq: root.iaq;
+    }
 
-        height: 121px;
-        width: 174px;
-
+    if root.alert == Alert.none && root.page == 2: DetailsPage {
         co: root.co;
         hcho: root.hcho;
         tvoc: root.tvoc;
     }
 
-    IAQ {
-        x: 0px;
-        y: 278px;
+    if root.alert == Alert.co: AlertPage {
+        tip: "Air the room now";
+        reason: "Carbon monoxide";
+        value: root.co.to-fixed(1);
+        unit: "ppm";
+        tone: Theme.bad;
+    }
 
-        height: 58px;
-        width: parent.width;
+    if root.alert == Alert.hcho: AlertPage {
+        tip: "Open a window";
+        reason: "Formaldehyde is high";
+        value: round(root.hcho * 1000);
+        unit: "ppb";
+    }
 
-        iaq: root.iaq;
+    if root.alert == Alert.tvoc: AlertPage {
+        tip: "Open a window";
+        reason: "VOCs are high";
+        value: round(root.tvoc * 1000);
+        unit: "ppb";
+    }
+
+    if root.alert == Alert.air: AlertPage {
+        tip: "Open a window";
+        reason: "Air quality is poor";
+        value: root.iaq == "hazardous" ? "Bad" : "Poor";
+        unit: "";
     }
 }

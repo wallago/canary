@@ -1,0 +1,202 @@
+import { Theme } from "theme.slint";
+
+// A 270° gauge, open at the bottom, drawn as a ring of dots. `fraction`
+// 0..1 lights them clockwise from the lower left.
+//
+// Dots rather than a stroked `Path`: the software renderer rasterises a path
+// into heap-allocated cells, and an arc this size ran the 150 KiB heap out.
+export component Gauge {
+    in property <float> fraction;
+    in property <brush> color;
+    in property <brush> track: Theme.track;
+    in property <length> thickness: 10px;
+    in property <int> segments: 24;
+
+    property <length> r: (root.width - root.thickness) / 2;
+    property <int> lit: round(clamp(root.fraction, 0, 1) * root.segments);
+
+    for i in root.segments: Rectangle {
+        // Spread the dots evenly from 135° to 405°, both ends included.
+        property <angle> at: 135deg + 270deg * i / (root.segments - 1);
+
+        x: root.width / 2 + root.r * cos(at) - root.thickness / 2;
+        y: root.height / 2 + root.r * sin(at) - root.thickness / 2;
+        width: root.thickness;
+        height: root.thickness;
+        border-radius: root.thickness / 2;
+        background: i < root.lit ? root.color : root.track;
+    }
+}
+
+// Three dots under a page title; `active` is the lit one.
+export component PageDots {
+    in property <int> active;
+
+    HorizontalLayout {
+        spacing: 6px;
+        alignment: center;
+
+        for i in 3: Rectangle {
+            width: 8px;
+            height: 8px;
+            border-radius: 4px;
+            background: i == root.active ? Theme.accent-color : Theme.ring;
+        }
+    }
+}
+
+// A page's title and its dots, at the same height on every page so nothing
+// jumps when the rotation moves on.
+export component PageHeader {
+    in property <string> title;
+    in property <int> active;
+
+    width: 360px;
+    height: 46px;
+
+    Text {
+        y: 0px;
+        width: parent.width;
+        text: root.title;
+        color: Theme.text-main;
+        font-size: 18px;
+        font-weight: 700;
+        letter-spacing: 3px;
+        horizontal-alignment: center;
+    }
+
+    PageDots {
+        y: 28px;
+        width: parent.width;
+        active: root.active;
+    }
+}
+
+// Page 1: temperature and humidity gauges, and one verdict.
+export component ComfortPage {
+    in property <float> temperature;
+    in property <float> humidity;
+    in property <string> verdict;
+    in property <bool> ok;
+
+    property <int> tenths: round(temperature * 10);
+    property <color> tone: ok ? Theme.good : Theme.warning;
+
+    width: 360px;
+    height: 360px;
+
+    PageHeader {
+        y: 52px;
+        title: "COMFORT";
+        active: 0;
+    }
+
+    // Temperature, 10–30 °C across the arc.
+    Gauge {
+        x: 33px;
+        y: 96px;
+        width: 140px;
+        height: 140px;
+        fraction: (temperature - 10) / 20;
+        color: Theme.thermometer-tint;
+    }
+
+    Text {
+        x: 33px;
+        y: 132px;
+        width: 140px;
+        text: floor(tenths / 10) + "." + mod(tenths, 10);
+        color: Theme.text-main;
+        font-size: 46px;
+        font-weight: 700;
+        horizontal-alignment: center;
+    }
+
+    Text {
+        x: 33px;
+        y: 188px;
+        width: 140px;
+        text: "°C";
+        color: Theme.thermometer-tint;
+        font-size: 18px;
+        font-weight: 700;
+        horizontal-alignment: center;
+    }
+
+    // Humidity, 0–100 % across the arc.
+    Gauge {
+        x: 187px;
+        y: 96px;
+        width: 140px;
+        height: 140px;
+        fraction: humidity / 100;
+        color: Theme.humidity-tint;
+    }
+
+    Text {
+        x: 187px;
+        y: 132px;
+        width: 140px;
+        text: round(humidity);
+        color: Theme.text-main;
+        font-size: 46px;
+        font-weight: 700;
+        horizontal-alignment: center;
+    }
+
+    Text {
+        x: 187px;
+        y: 188px;
+        width: 140px;
+        text: "%";
+        color: Theme.humidity-tint;
+        font-size: 18px;
+        font-weight: 700;
+        horizontal-alignment: center;
+    }
+
+    Text {
+        x: 33px;
+        y: 236px;
+        width: 140px;
+        text: "TEMP";
+        color: Theme.text-secondary;
+        font-size: 14px;
+        font-weight: 500;
+        letter-spacing: 2px;
+        horizontal-alignment: center;
+    }
+
+    Text {
+        x: 187px;
+        y: 236px;
+        width: 140px;
+        text: "HUMIDITY";
+        color: Theme.text-secondary;
+        font-size: 14px;
+        font-weight: 500;
+        letter-spacing: 2px;
+        horizontal-alignment: center;
+    }
+
+    Rectangle {
+        x: (parent.width - self.width) / 2;
+        y: 268px;
+        width: pill.preferred-width + 44px;
+        height: 48px;
+        border-radius: 24px;
+        border-width: 2px;
+        border-color: tone;
+        background: tone.with-alpha(0.12);
+
+        pill := Text {
+            text: verdict;
+            color: tone;
+            font-size: 22px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            vertical-alignment: center;
+            horizontal-alignment: center;
+        }
+    }
+}

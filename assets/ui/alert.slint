@@ -1,0 +1,92 @@
+import { Theme } from "theme.slint";
+
+// Takes over the screen when something needs doing: one tip, why, and the
+// reading behind it.
+export component AlertPage {
+    in property <string> tip;
+    in property <string> reason;
+    in property <string> value;
+    in property <string> unit;
+    in property <color> tone: Theme.warning;
+
+    width: 360px;
+    height: 360px;
+
+    Rectangle {
+        border-radius: 180px;
+        background: tone.with-alpha(0.10);
+        border-width: 10px;
+        border-color: tone;
+    }
+
+    // A window: frame plus cross bars.
+    Rectangle {
+        x: (parent.width - self.width) / 2;
+        y: 58px;
+        width: 46px;
+        height: 54px;
+        border-radius: 4px;
+        border-width: 4px;
+        border-color: tone;
+
+        Rectangle {
+            x: (parent.width - self.width) / 2;
+            width: 4px;
+            height: parent.height;
+            background: tone;
+        }
+
+        Rectangle {
+            y: (parent.height - self.height) / 2;
+            width: parent.width;
+            height: 4px;
+            background: tone;
+        }
+    }
+
+    Text {
+        x: 40px;
+        y: 128px;
+        width: 280px;
+        text: tip;
+        color: Theme.text-main;
+        font-size: 40px;
+        font-weight: 700;
+        wrap: word-wrap;
+        horizontal-alignment: center;
+    }
+
+    Text {
+        y: 232px;
+        width: parent.width;
+        text: reason;
+        color: tone;
+        font-size: 20px;
+        font-weight: 500;
+        horizontal-alignment: center;
+    }
+
+    HorizontalLayout {
+        y: 262px;
+        width: parent.width;
+        height: 40px;
+        alignment: center;
+        spacing: 6px;
+
+        Text {
+            text: value;
+            color: Theme.text-main;
+            font-size: 30px;
+            font-weight: 700;
+            vertical-alignment: bottom;
+        }
+
+        Text {
+            text: unit;
+            color: Theme.text-secondary;
+            font-size: 16px;
+            font-weight: 500;
+            vertical-alignment: bottom;
+        }
+    }
+}

@@ -1,0 +1,85 @@
+import { Theme } from "theme.slint";
+import { PageHeader } from "comfort.slint";
+
+// One gas: name, value, unit.
+component GasRow {
+    in property <string> name;
+    in property <string> value;
+    in property <string> unit;
+
+    height: 48px;
+
+    HorizontalLayout {
+        spacing: 14px;
+        alignment: start;
+
+        Text {
+            width: 86px;
+            text: root.name;
+            color: Theme.text-secondary;
+            font-size: 22px;
+            font-weight: 500;
+            vertical-alignment: center;
+        }
+
+        Text {
+            text: root.value;
+            color: Theme.text-main;
+            font-size: 40px;
+            font-weight: 700;
+            vertical-alignment: center;
+        }
+
+        Text {
+            text: root.unit;
+            color: Theme.text-secondary;
+            font-size: 16px;
+            font-weight: 500;
+            vertical-alignment: center;
+        }
+    }
+}
+
+// Page 3: the gas readings, for when you want the numbers. Only shown while
+// no alert is up, so there is no per-row warning colour to draw.
+export component DetailsPage {
+    // In ppm, as the sensor reports them.
+    in property <float> co;
+    in property <float> hcho;
+    in property <float> tvoc;
+
+    width: 360px;
+    height: 360px;
+
+    PageHeader {
+        y: 52px;
+        title: "DETAILS";
+        active: 2;
+    }
+
+    VerticalLayout {
+        x: 62px;
+        y: 114px;
+        width: 236px;
+        spacing: 14px;
+        alignment: start;
+
+        GasRow {
+            name: "VOCs";
+            value: round(tvoc * 1000);
+            unit: "ppb";
+        }
+
+        GasRow {
+            name: "HCHO";
+            value: round(hcho * 1000);
+            unit: "ppb";
+        }
+
+        GasRow {
+            name: "CO";
+            value: co.to-fixed(1);
+            unit: "ppm";
+        }
+    }
+}
