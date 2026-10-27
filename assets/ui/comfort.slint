@@ -45,6 +45,33 @@ export component PageDots {
     }
 }
 
+// A page's title and its dots, at the same height on every page so nothing
+// jumps when the rotation moves on.
+export component PageHeader {
+    in property <string> title;
+    in property <int> active;
+
+    width: 360px;
+    height: 46px;
+
+    Text {
+        y: 0px;
+        width: parent.width;
+        text: root.title;
+        color: Theme.text-main;
+        font-size: 18px;
+        font-weight: 700;
+        letter-spacing: 3px;
+        horizontal-alignment: center;
+    }
+
+    PageDots {
+        y: 28px;
+        width: parent.width;
+        active: root.active;
+    }
+}
+
 // Page 1: temperature and humidity gauges, and one verdict.
 export component ComfortPage {
     in property <float> temperature;
@@ -58,27 +85,16 @@ export component ComfortPage {
     width: 360px;
     height: 360px;
 
-    Text {
-        y: 34px;
-        width: parent.width;
-        text: "COMFORT";
-        color: Theme.text-main;
-        font-size: 18px;
-        font-weight: 700;
-        letter-spacing: 3px;
-        horizontal-alignment: center;
-    }
-
-    PageDots {
-        y: 62px;
-        width: parent.width;
+    PageHeader {
+        y: 52px;
+        title: "COMFORT";
         active: 0;
     }
 
     // Temperature, 10–30 °C across the arc.
     Gauge {
         x: 33px;
-        y: 88px;
+        y: 96px;
         width: 140px;
         height: 140px;
         fraction: (temperature - 10) / 20;
@@ -87,7 +103,7 @@ export component ComfortPage {
 
     Text {
         x: 33px;
-        y: 124px;
+        y: 132px;
         width: 140px;
         text: floor(tenths / 10) + "." + mod(tenths, 10);
         color: Theme.text-main;
@@ -98,7 +114,7 @@ export component ComfortPage {
 
     Text {
         x: 33px;
-        y: 180px;
+        y: 188px;
         width: 140px;
         text: "°C";
         color: Theme.thermometer-tint;
@@ -110,7 +126,7 @@ export component ComfortPage {
     // Humidity, 0–100 % across the arc.
     Gauge {
         x: 187px;
-        y: 88px;
+        y: 96px;
         width: 140px;
         height: 140px;
         fraction: humidity / 100;
@@ -119,7 +135,7 @@ export component ComfortPage {
 
     Text {
         x: 187px;
-        y: 124px;
+        y: 132px;
         width: 140px;
         text: round(humidity);
         color: Theme.text-main;
@@ -130,7 +146,7 @@ export component ComfortPage {
 
     Text {
         x: 187px;
-        y: 180px;
+        y: 188px;
         width: 140px;
         text: "%";
         color: Theme.humidity-tint;
@@ -141,7 +157,7 @@ export component ComfortPage {
 
     Text {
         x: 33px;
-        y: 228px;
+        y: 236px;
         width: 140px;
         text: "TEMP";
         color: Theme.text-secondary;
@@ -153,7 +169,7 @@ export component ComfortPage {
 
     Text {
         x: 187px;
-        y: 228px;
+        y: 236px;
         width: 140px;
         text: "HUMIDITY";
         color: Theme.text-secondary;
@@ -165,8 +181,8 @@ export component ComfortPage {
 
     Rectangle {
         x: (parent.width - self.width) / 2;
-        y: 262px;
-        width: pill.preferred-width + 56px;
+        y: 268px;
+        width: pill.preferred-width + 44px;
         height: 48px;
         border-radius: 24px;
         border-width: 2px;

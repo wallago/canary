@@ -1,5 +1,5 @@
 import { Theme } from "theme.slint";
-import { PageDots } from "comfort.slint";
+import { PageHeader } from "comfort.slint";
 
 // One gas: name, value, unit.
 component GasRow {
@@ -51,26 +51,15 @@ export component DetailsPage {
     width: 360px;
     height: 360px;
 
-    Text {
-        y: 50px;
-        width: parent.width;
-        text: "DETAILS";
-        color: Theme.text-main;
-        font-size: 18px;
-        font-weight: 700;
-        letter-spacing: 3px;
-        horizontal-alignment: center;
-    }
-
-    PageDots {
-        y: 78px;
-        width: parent.width;
+    PageHeader {
+        y: 52px;
+        title: "DETAILS";
         active: 2;
     }
 
     VerticalLayout {
         x: 62px;
-        y: 112px;
+        y: 114px;
         width: 236px;
         spacing: 14px;
         alignment: start;

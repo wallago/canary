@@ -95,20 +95,4 @@ export component EnvironmentDisplay inherits Window {
         value: root.iaq == "hazardous" ? "Bad" : "Poor";
         unit: "";
     }
-
-    // ═════════════════════════════════════════════
-    // Outer display ring
-    // ═════════════════════════════════════════════
-
-    // An alert draws its own, coloured ring.
-    if root.alert == Alert.none: Rectangle {
-        width: 360px;
-        height: 360px;
-
-        border-radius: 180px;
-        background: transparent;
-
-        border-width: 3px;
-        border-color: Theme.ring;
-    }
 }
