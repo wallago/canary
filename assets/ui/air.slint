@@ -1,7 +1,8 @@
 import { Theme } from "theme.slint";
-import { Gauge, PageHeader } from "comfort.slint";
+import { PageHeader } from "comfort.slint";
 
-// Page 2: the sensor's air quality index as one big word.
+// Page 2: the sensor's air quality index as one big word, over a four-step
+// scale with the current step lit.
 export component AirPage {
     // "good", "moderate", "unhealthy" or "hazardous", as the sensor reports.
     in property <string> iaq;
@@ -12,17 +13,6 @@ export component AirPage {
     width: 360px;
     height: 360px;
 
-    Gauge {
-        x: 15px;
-        y: 15px;
-        width: 330px;
-        height: 330px;
-        thickness: 14px;
-        segments: 42;
-        fraction: level / 4;
-        color: tone;
-    }
-
     PageHeader {
         y: 52px;
         title: "AIR QUALITY";
@@ -30,7 +20,7 @@ export component AirPage {
     }
 
     Text {
-        y: 140px;
+        y: 118px;
         width: parent.width;
         text: level == 1 ? "GOOD" : level == 2 ? "FAIR" : level == 3 ? "POOR" : "BAD";
         color: tone;
@@ -39,8 +29,35 @@ export component AirPage {
         horizontal-alignment: center;
     }
 
+    // Good, fair, poor, bad from left to right. Each step keeps its own
+    // colour; only the current one is lit and taller.
+    HorizontalLayout {
+        y: 226px;
+        width: parent.width;
+        height: 14px;
+        alignment: center;
+        spacing: 8px;
+
+        for step in [
+            { level: 1, color: Theme.good },
+            { level: 2, color: Theme.warning },
+            { level: 3, color: Theme.bad },
+            { level: 4, color: Theme.bad },
+        ]: Rectangle {
+            width: 52px;
+            height: 14px;
+
+            Rectangle {
+                y: step.level == root.level ? 0px : 3px;
+                height: step.level == root.level ? 14px : 8px;
+                border-radius: self.height / 2;
+                background: step.level == root.level ? step.color : step.color.with-alpha(0.25);
+            }
+        }
+    }
+
     Text {
-        y: 238px;
+        y: 258px;
         width: parent.width;
         text: level == 1 ? "Nothing to do" : "Let some air in";
         color: Theme.text-secondary;
