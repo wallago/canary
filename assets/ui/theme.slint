@@ -3,9 +3,18 @@
 export global Theme {
     out property <color> background-color: #000000;
     out property <color> text-main: #ffffff;
-    out property <color> text-secondary: #416788;
+    out property <color> text-secondary: #9aa3ad;
     out property <color> accent-color: #55D6BE;
     out property <color> thermometer-tint: #55D6BE;
     out property <color> humidity-tint: #4C86A8;
     out property <color> pressure-tint: #DBBBF5;
+
+    // Status: good / worth a look / act now.
+    out property <color> good: #55D6BE;
+    out property <color> warning: #F2A541;
+    out property <color> bad: #E5484D;
+
+    // Unlit part of a gauge, and the inactive page dots.
+    out property <color> track: #1f2a2b;
+    out property <color> ring: #2d3035;
 }

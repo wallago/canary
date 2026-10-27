@@ -4,6 +4,7 @@
 use alloc::string::ToString;
 
 use canary_core::{
+    advice::{self, Alert, Comfort},
     data::{co::CO, hcho::HCHO, humidity::Humidity, iaq::IAQ, temp::Temp, tvoc::TVOC},
     prelude::*,
 };
@@ -102,6 +103,18 @@ fn widget(peripherals: Peripherals, delay: Delay) -> Result<()> {
                         tvoc = new_tvoc;
                         screen.set_tvoc(tvoc.value());
                     }
+
+                    // Slint skips the repaint when a verdict hasn't changed.
+                    screen.set_comfort(comfort_for_screen(advice::comfort(
+                        temp.value(),
+                        hum.value(),
+                    )));
+                    screen.set_alert(alert_for_screen(advice::alert(
+                        co.value(),
+                        hcho.value(),
+                        tvoc.value(),
+                        iaq.value(),
+                    )));
                 }
                 // A miss leaves the last good value on screen.
                 Ok(None) => {}
@@ -117,5 +130,27 @@ fn widget(peripherals: Peripherals, delay: Delay) -> Result<()> {
         if !window.has_active_animations() {
             delay.delay_millis(FRAME_PAUSE_MS);
         }
+    }
+}
+
+/// The screen's copy of [`Comfort`]; Slint generates its own enum.
+fn comfort_for_screen(comfort: Comfort) -> ui::generated::Comfort {
+    match comfort {
+        Comfort::Comfortable => ui::generated::Comfort::Comfortable,
+        Comfort::TooCold => ui::generated::Comfort::TooCold,
+        Comfort::TooWarm => ui::generated::Comfort::TooWarm,
+        Comfort::TooDry => ui::generated::Comfort::TooDry,
+        Comfort::TooHumid => ui::generated::Comfort::TooHumid,
+    }
+}
+
+/// The screen's copy of [`Alert`]; Slint generates its own enum.
+fn alert_for_screen(alert: Alert) -> ui::generated::Alert {
+    match alert {
+        Alert::None => ui::generated::Alert::None,
+        Alert::Co => ui::generated::Alert::Co,
+        Alert::Hcho => ui::generated::Alert::Hcho,
+        Alert::Tvoc => ui::generated::Alert::Tvoc,
+        Alert::Air => ui::generated::Alert::Air,
     }
 }

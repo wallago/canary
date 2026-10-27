@@ -1,0 +1,61 @@
+import { Theme } from "theme.slint";
+import { Gauge, PageDots } from "comfort.slint";
+
+// Page 2: the sensor's air quality index as one big word.
+export component AirPage {
+    // "good", "moderate", "unhealthy" or "hazardous", as the sensor reports.
+    in property <string> iaq;
+
+    property <int> level: iaq == "good" ? 1 : iaq == "moderate" ? 2 : iaq == "unhealthy" ? 3 : 4;
+    property <color> tone: level == 1 ? Theme.good : level == 2 ? Theme.warning : Theme.bad;
+
+    width: 360px;
+    height: 360px;
+
+    Gauge {
+        x: 23px;
+        y: 23px;
+        width: 314px;
+        height: 314px;
+        thickness: 14px;
+        fraction: level / 4;
+        color: tone;
+    }
+
+    Text {
+        y: 70px;
+        width: parent.width;
+        text: "AIR QUALITY";
+        color: Theme.text-main;
+        font-size: 18px;
+        font-weight: 700;
+        letter-spacing: 3px;
+        horizontal-alignment: center;
+    }
+
+    PageDots {
+        y: 98px;
+        width: parent.width;
+        active: 1;
+    }
+
+    Text {
+        y: 140px;
+        width: parent.width;
+        text: level == 1 ? "GOOD" : level == 2 ? "FAIR" : level == 3 ? "POOR" : "BAD";
+        color: tone;
+        font-size: 76px;
+        font-weight: 700;
+        horizontal-alignment: center;
+    }
+
+    Text {
+        y: 238px;
+        width: parent.width;
+        text: level == 1 ? "Nothing to do" : "Let some air in";
+        color: Theme.text-secondary;
+        font-size: 20px;
+        font-weight: 500;
+        horizontal-alignment: center;
+    }
+}
