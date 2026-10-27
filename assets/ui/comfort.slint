@@ -1,68 +1,30 @@
 import { Theme } from "theme.slint";
 
-// A 270° arc gauge, open at the bottom. `fraction` 0..1 fills it clockwise
-// from the lower left.
+// A 270° gauge, open at the bottom, drawn as a ring of dots. `fraction`
+// 0..1 lights them clockwise from the lower left.
+//
+// Dots rather than a stroked `Path`: the software renderer rasterises a path
+// into heap-allocated cells, and an arc this size ran the 150 KiB heap out.
 export component Gauge {
     in property <float> fraction;
     in property <brush> color;
     in property <brush> track: Theme.track;
     in property <length> thickness: 10px;
+    in property <int> segments: 24;
 
-    property <float> size: root.width / 1px;
-    property <float> r: (size - root.thickness / 1px) / 2;
-    property <float> c: size / 2;
-    property <angle> start: 135deg;
-    property <angle> sweep: 270deg * clamp(root.fraction, 0, 1);
+    property <length> r: (root.width - root.thickness) / 2;
+    property <int> lit: round(clamp(root.fraction, 0, 1) * root.segments);
 
-    Path {
-        width: 100%;
-        height: 100%;
-        viewbox-width: size;
-        viewbox-height: size;
+    for i in root.segments: Rectangle {
+        // Spread the dots evenly from 135° to 405°, both ends included.
+        property <angle> at: 135deg + 270deg * i / (root.segments - 1);
 
-        stroke: root.track;
-        stroke-width: root.thickness;
-        stroke-line-cap: round;
-
-        MoveTo {
-            x: c + r * cos(start);
-            y: c + r * sin(start);
-        }
-
-        ArcTo {
-            x: c + r * cos(start + 270deg);
-            y: c + r * sin(start + 270deg);
-            radius-x: r;
-            radius-y: r;
-            large-arc: true;
-            sweep: true;
-        }
-    }
-
-    // A zero-length arc still paints its round caps, so skip it when empty.
-    if root.fraction > 0.01: Path {
-        width: 100%;
-        height: 100%;
-        viewbox-width: size;
-        viewbox-height: size;
-
-        stroke: root.color;
-        stroke-width: root.thickness;
-        stroke-line-cap: round;
-
-        MoveTo {
-            x: c + r * cos(start);
-            y: c + r * sin(start);
-        }
-
-        ArcTo {
-            x: c + r * cos(start + sweep);
-            y: c + r * sin(start + sweep);
-            radius-x: r;
-            radius-y: r;
-            large-arc: sweep > 180deg;
-            sweep: true;
-        }
+        x: root.width / 2 + root.r * cos(at) - root.thickness / 2;
+        y: root.height / 2 + root.r * sin(at) - root.thickness / 2;
+        width: root.thickness;
+        height: root.thickness;
+        border-radius: root.thickness / 2;
+        background: i < root.lit ? root.color : root.track;
     }
 }
 
